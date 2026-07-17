@@ -526,8 +526,13 @@ function showRegPanel(){
 }
 function goReg(){
   const link = 'https://t.me/' + (DATA.bot || 'Uybopuz_bot') + '?start=reg';
-  if(tg && tg.openTelegramLink){ tg.openTelegramLink(link); }
-  else window.open(link, '_blank');
+  if(tg && tg.openTelegramLink){
+    tg.openTelegramLink(link);
+    // Mini App yopilsin — orqada bot chati ochiq qoladi
+    setTimeout(function(){ try{ tg.close(); }catch(e){} }, 250);
+  } else {
+    window.open(link, '_blank');
+  }
 }
 function showOrderDone(text){
   el('cartBody').innerHTML = `<div class="panel" style="text-align:center"><div style="font-size:40px">✅</div><div style="white-space:pre-wrap;font-size:14px;line-height:1.5;margin-top:8px">${text.replace(/<[^>]+>/g,'')}</div></div><button class="bigbtn" style="margin:0 16px" onclick="switchView('shop')">🛍 Xaridni davom ettirish</button>`;
