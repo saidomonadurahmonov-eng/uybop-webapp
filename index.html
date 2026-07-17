@@ -512,6 +512,23 @@ async function checkout(){
     switchView('profile');
   }
 }
+function showRegPanel(){
+  el('cartBody').innerHTML = `
+    <div class="panel" style="text-align:center">
+      <div style="font-size:44px">📱</div>
+      <h3 style="margin:10px 0 6px">Buyurtma berish uchun ro'yxatdan o'ting</h3>
+      <div style="color:var(--hint);font-size:13.5px;line-height:1.55">
+        Bu 30 soniya: botda <b>telefon raqamingizni</b> yuborasiz —
+        buyurtmalaringiz shu raqamga bog'lanadi.<br>Savatingiz saqlanib qoladi.
+      </div>
+    </div>
+    <button class="bigbtn" style="margin:0 16px;width:calc(100% - 32px)" onclick="goReg()">📱 Ro'yxatdan o'tish</button>`;
+}
+function goReg(){
+  const link = 'https://t.me/' + (DATA.bot || 'Uybopuz_bot') + '?start=reg';
+  if(tg && tg.openTelegramLink){ tg.openTelegramLink(link); }
+  else window.open(link, '_blank');
+}
 function showOrderDone(text){
   el('cartBody').innerHTML = `<div class="panel" style="text-align:center"><div style="font-size:40px">✅</div><div style="white-space:pre-wrap;font-size:14px;line-height:1.5;margin-top:8px">${text.replace(/<[^>]+>/g,'')}</div></div><button class="bigbtn" style="margin:0 16px" onclick="switchView('shop')">🛍 Xaridni davom ettirish</button>`;
 }
