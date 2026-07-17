@@ -245,6 +245,7 @@ async function load(){
     el('updated').textContent = 'Yangilangan: ' + (DATA.generated_at || '');
     if(DATA.authed){ await loadAuthedCatalog(); return; }
     renderShop();
+    loadManual();
   }catch(e){
     el('empty').style.display='block';
     el('empty').textContent='Katalog yuklanmadi. Internetni tekshiring.';
@@ -263,6 +264,17 @@ async function loadAuthedCatalog(){
     DATA = {...DATA, products:d.products||[], shelves:d.shelves||[], categories:d.categories||[]};
     renderShop();
   }catch(e){ gateMsg('Katalogni yuklab bo\'lmadi. Birozdan so\'ng qayta urinib ko\'ring.'); }
+}
+async function loadManual(){
+  if(!DATA.api_url) return;
+  try{
+    const r = await fetch(DATA.api_url + '/api/manual');
+    const d = await r.json();
+    if(d.products && d.products.length){
+      DATA.products = (DATA.products||[]).concat(d.products);
+      renderCats(); renderGrid();
+    }
+  }catch(e){}
 }
 function gateMsg(html){
   el('shelves').innerHTML=''; el('grid').innerHTML=''; el('cats').innerHTML='';
