@@ -219,6 +219,7 @@ const LOGIN_HTML = `<div class="empty">📲 Ilovadan to'liq foydalanish (buyurtm
 
 let DATA = {products: [], categories: [], api_url: ''};
 let cart = {};
+let delivMode = 'pickup', MY_QOQON = null;
 let activeCat = '', query = '', curView = 'shop';
 const loaded = {history:false, balance:false, profile:false};
 
@@ -377,6 +378,35 @@ function optom(t){ const pct=OPTOM_PCT(), min=OPTOM_MIN(); if(pct>0&&min>0&&t>=m
 function cartCount(){ return Object.values(cart).reduce((a,c)=>a+c.qty,0); }
 function cartTotal(){ return Object.values(cart).reduce((a,c)=>a+c.qty*c.price,0); }
 function updateBadge(){ const n=cartCount(); const b=el('navBadge'); b.style.display=n?'flex':'none'; b.textContent=n; if(curView==='cart') renderCart(); }
+const DELIVS = [
+  {id:'pickup', nom:"🏪 Olib ketish",  izoh:"To'lov do'konda",                 qoqon:false},
+  {id:'ideal',  nom:"🚕 IDEAL taxi",   izoh:"Naqd \u2014 pulni taxichiga berasiz", qoqon:true},
+  {id:'yandex', nom:"🚖 Yandex taxi",  izoh:"Karta orqali \u00b7 arzon yo'lkira",  qoqon:true},
+  {id:'bts',    nom:"📦 BTS pochta",   izoh:"Karta orqali \u00b7 viloyatlarga",    qoqon:false},
+];
+function delivOptsHtml(){
+  const list = DELIVS.filter(d => MY_QOQON===false ? !d.qoqon : true);
+  if(!list.some(d=>d.id===delivMode)) delivMode = list[0].id;
+  let h = list.map(d=>`
+    <div onclick="setDeliv('${d.id}')" style="display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;margin:6px 0;cursor:pointer;border:1.5px solid ${d.id===delivMode?'var(--accent)':'var(--line)'};background:${d.id===delivMode?'rgba(239,93,168,.12)':'var(--card2)'}">
+      <div style="width:18px;height:18px;flex:0 0 18px;border-radius:50%;border:2px solid ${d.id===delivMode?'var(--accent)':'var(--hint)'};display:flex;align-items:center;justify-content:center">${d.id===delivMode?'<div style="width:9px;height:9px;border-radius:50%;background:var(--accent)"></div>':''}</div>
+      <div><div style="font-size:14px;font-weight:600">${d.nom}</div><div style="font-size:11.5px;color:var(--hint)">${d.izoh}</div></div>
+    </div>`).join('');
+  if(MY_QOQON===false) h += `<div class="note">📍 Hududingiz Qo'qondan tashqarida \u2014 yetkazish BTS pochta, to'lov karta orqali.</div>`;
+  return h;
+}
+function setDeliv(id){ delivMode=id; const dd=el('dopts'); if(dd) dd.innerHTML=delivOptsHtml(); }
+async function aniqlaQoqon(){
+  if(MY_QOQON!==null || !hasAuth() || !DATA.api_url) return;
+  try{
+    const d = await apiGet('/api/me');
+    if(d && (d.city || d.region)){
+      const joy = ((d.city||'')+' '+(d.region||'')).toLowerCase();
+      MY_QOQON = /qo'qon|qoqon|kokand/.test(joy);
+      const dd = el('dopts'); if(dd) dd.innerHTML = delivOptsHtml();
+    }
+  }catch(e){}
+}
 function renderCart(){
   const items = Object.values(cart);
   if(!items.length){ el('cartBody').innerHTML='<div class="empty">Savat bo\'sh.<br>Do\'kondan mahsulot tanlang.</div>'; return; }
@@ -396,9 +426,11 @@ function renderCart(){
         ? `<div class="discount"><span>🏷 Optom chegirma (${OPTOM_PCT()}%):</span><span>−${fmt(o.d)}</span></div>
            <div class="total"><span>💳 To'lanadigan:</span><span>${fmt(o.pay)}</span></div>`
         : (OPTOM_PCT()>0 ? `<div class="note" style="background:rgba(255,149,0,.12);padding:8px 10px;border-radius:10px;margin:6px 0">🏷 Optomgacha yana <b>${fmt(OPTOM_MIN()-t)}</b> qoldi — ${OPTOM_PCT()}% chegirma!</div>` : '')}
-      <div class="note" style="margin:8px 0 0">📍 «UYBOP» do'koniga. To'lov do'konda, olib ketishda.</div>
+      <div class="note" style="margin:10px 0 2px;font-weight:700;color:var(--text)">🚚 Yetkazib berish / to'lov:</div>
+      <div id="dopts">${delivOptsHtml()}</div>
       <button class="bigbtn" onclick="checkout()">✅ Buyurtma berish</button>
     </div>`;
+  aniqlaQoqon();
 }
 function cAdj(id,d){
   if(!cart[id]) return;
@@ -423,7 +455,7 @@ async function checkout(){
       const r = await fetch(DATA.api_url + '/api/order', {
         method:'POST',
         headers: authHeaders({'Content-Type':'application/json'}),
-        body: JSON.stringify({items})
+        body: JSON.stringify({items, delivery: delivMode})
       });
       if(r.status===401){ clearSess(); toast('Avval Telegram orqali kiring.'); switchView('profile'); return; }
       const d = await r.json();
@@ -436,7 +468,7 @@ async function checkout(){
     }catch(e){ toast("Tармoq xatosi. Qayta urinib ko'ring."); }
     finally{ ordering = false; }
   } else if(tg && tg.sendData){
-    tg.sendData(JSON.stringify({v:1, items}));
+    tg.sendData(JSON.stringify({v:1, items, delivery: delivMode}));
   } else {
     toast('Buyurtma uchun avval Telegram orqali kiring.');
     switchView('profile');
