@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>UYBOP Boshqaruv</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg:#0d1620; --card:#15212e; --card2:#1d2c3c; --text:#eef3f9; --hint:#8ba0b4;
+  --accent:#ef5da8; --accent-text:#08131f; --line:rgba(239,93,168,.18);
+  --navy:#132A52; --ok:#2fbf71; --warn:#f0a020;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);padding-bottom:70px}
+.top{background:var(--navy);padding:14px 16px;position:sticky;top:0;z-index:20}
+.top .t{font-size:18px;font-weight:800}.top .t span{color:#F7941D}
+.top .u{font-size:11.5px;color:#93a7bb;margin-top:2px}
+.tabs{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);z-index:30;height:calc(56px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 10px rgba(0,0,0,.35)}
+.tabs button{flex:1;border:none;background:none;color:var(--hint);font-size:10.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer}
+.tabs button .i{font-size:19px}.tabs button.on{color:var(--accent)}
+.view{display:none;padding:14px 14px 20px}.view.on{display:block}
+.search{display:flex;gap:8px;margin-bottom:12px}
+.search input{flex:1;border:none;border-radius:12px;padding:12px 14px;font-size:15px;background:var(--card);color:var(--text);outline:none;border:1px solid var(--line)}
+.rowi{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+.rowi img{width:46px;height:46px;border-radius:10px;object-fit:cover;background:var(--card2)}
+.rowi .ph{width:46px;height:46px;border-radius:10px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:22px}
+.rowi .nm{flex:1;min-width:0}
+.rowi .nm .n{font-size:13.5px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.rowi .nm .p{font-size:13px;font-weight:700;color:var(--accent);margin-top:3px}
+.b{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:7px;margin-left:5px;vertical-align:middle}
+.b.arx{background:#5b2530;color:#ff9d9d}.b.ed{background:#20335c;color:#9dbcff}.b.man{background:#274a33;color:#8fe0ae}
+.empty{text-align:center;color:var(--hint);padding:36px 16px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+label{display:block;font-size:11.5px;color:var(--hint);margin:12px 0 5px;font-weight:600;letter-spacing:.3px}
+input.f,textarea.f{width:100%;border:1px solid var(--line);border-radius:11px;padding:12px 13px;font-size:15px;background:var(--card2);color:var(--text);outline:none}
+input.f:focus{border-color:var(--accent)}
+.btn{width:100%;border:none;border-radius:12px;padding:14px;font-size:15.5px;font-weight:700;cursor:pointer;margin-top:12px}
+.btn.p{background:var(--accent);color:var(--accent-text)}
+.btn.g{background:var(--card2);color:var(--text);border:1px solid var(--line)}
+.btn.d{background:#5b2530;color:#ff9d9d}
+.btn:disabled{opacity:.5}
+.sw{display:flex;align-items:center;justify-content:space-between;background:var(--card2);border-radius:11px;padding:12px 13px;margin-top:12px}
+.sw .lbl{font-size:14px}
+.tgl{width:48px;height:28px;border-radius:14px;background:#3a4a5c;position:relative;cursor:pointer;transition:.15s}
+.tgl.on{background:var(--accent)}
+.tgl::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s}
+.tgl.on::after{left:23px}
+.prev{width:100%;max-height:200px;object-fit:contain;border-radius:12px;background:var(--card2);margin-top:8px}
+.stat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat .s{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+.stat .s .v{font-size:20px;font-weight:800;color:var(--accent)}
+.stat .s .l{font-size:11px;color:var(--hint);margin-top:4px}
+.ord{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+.ord .h{display:flex;justify-content:space-between;font-weight:700;font-size:13.5px}
+.ord .h .s2{color:var(--accent)}
+.ord .m{font-size:12px;color:var(--hint);margin-top:5px;line-height:1.45;white-space:pre-line}
+.toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:rgba(20,25,35,.95);border:1px solid var(--line);color:#fff;padding:11px 20px;border-radius:12px;font-size:14px;z-index:99;display:none}
+.gate{padding:60px 24px;text-align:center;color:var(--hint);font-size:14.5px;line-height:1.6}
+.mtop{margin-top:12px}
+h3{font-size:15px;margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="t">UY<span>BOP</span> · Boshqaruv paneli</div>
+  <div class="u" id="uinfo">Yuklanmoqda...</div>
+</div>
+
+<div class="view" id="v-katalog">
+  <div class="search"><input id="q" type="search" placeholder="Mahsulot nomi yoki shtrix..."></div>
+  <div id="klist"><div class="empty">Qidiruv uchun yozing yoki kuting...</div></div>
+</div>
+
+<div class="view" id="v-tahrir">
+  <div class="card">
+    <h3 id="e-title">Tahrirlash</h3>
+    <label>🏷 Nomi</label>
+    <input class="f" id="e-name">
+    <label>💰 Narxi (so'm)</label>
+    <input class="f" id="e-price" type="number" inputmode="numeric">
+    <label>🖼 Rasm</label>
+    <img class="prev" id="e-prev" style="display:none">
+    <input class="f mtop" id="e-file" type="file" accept="image/*">
+    <div class="sw"><span class="lbl">📦 Arxivda (katalogda ko'rinmaydi)</span><div class="tgl" id="e-arx" onclick="this.classList.toggle('on')"></div></div>
+    <button class="btn p" id="e-save" onclick="saqla()">💾 Saqlash</button>
+    <button class="btn g" onclick="aslga()">↩️ Aslga qaytarish (tahrirlarni o'chirish)</button>
+    <button class="btn d" id="e-del" style="display:none" onclick="manOchir()">🗑 Mahsulotni o'chirish</button>
+    <button class="btn g" onclick="ochT('katalog')">⬅️ Ro'yxatga qaytish</button>
+  </div>
+</div>
+
+<div class="view" id="v-qoshish">
+  <div class="card">
+    <h3>➕ Yangi mahsulot (mDokon'da yo'q)</h3>
+    <label>🏷 Nomi</label><input class="f" id="a-name">
+    <label>💰 Narxi (so'm)</label><input class="f" id="a-price" type="number" inputmode="numeric">
+    <label>#️⃣ Shtrix-kod (ixtiyoriy)</label><input class="f" id="a-sku">
+    <button class="btn p" onclick="manQosh()">➕ Qo'shish</button>
+  </div>
+  <div class="card" style="padding:12px 14px">
+    <div style="font-size:12.5px;color:var(--hint);line-height:1.5">
+      Qo'shilgan mahsulot bir necha soniyada katalogda ko'rinadi.
+      Tahrirlash/o'chirish — 🗂 Katalog bo'limidan (yashil "qo'lda" belgisi bilan).
+    </div>
+  </div>
+</div>
+
+<div class="view" id="v-buyurtma"><div id="olist"><div class="empty">Yuklanmoqda...</div></div></div>
+
+<div class="view" id="v-stat">
+  <div class="stat" id="scards"></div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const tg = window.Telegram ? Telegram.WebApp : null;
+if (tg) { tg.ready(); tg.expand(); }
+const API = 'https://uybop-production.up.railway.app';
+const INIT = tg ? (tg.initData || '') : '';
+const el = id => document.getElementById(id);
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const fmt = n => new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + " so'm";
+function toast(m){ const t=el('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',2200); }
+
+async function api(path, opts){
+  opts = opts || {};
+  opts.headers = Object.assign({'X-Admin-Init': INIT}, opts.headers||{});
+  const r = await fetch(API+path, opts);
+  if(r.status===401) throw new Error('auth');
+  return r.json();
+}
+
+let ROLES = [], CUR = null, ROWS = [];
+
+const TABS = [
+  {id:'katalog', i:'🗂', t:'Katalog', rol:'katalog'},
+  {id:'qoshish', i:'➕', t:"Qo'shish", rol:'katalog'},
+  {id:'buyurtma', i:'🧾', t:'Buyurtma', rol:'buyurtma'},
+  {id:'stat', i:'📊', t:'Statistika', rol:'osish'},
+];
+
+function ochT(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  el('v-'+id).classList.add('on');
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.t===id));
+  if(id==='buyurtma') yukleOrders();
+  if(id==='stat') yukleStat();
+  window.scrollTo(0,0);
+}
+
+async function boshla(){
+  let me;
+  try{ me = await api('/api/admin/me'); }
+  catch(e){
+    document.body.innerHTML = '<div class="gate">⛔ <b>Kirish yopiq.</b><br><br>Bu panel faqat UYBOP xodimlari uchun.<br>@Uybopmarketing_bot orqali ariza yuboring — tasdiqlangach panel ochiladi.</div>';
+    return;
+  }
+  ROLES = me.roles || [];
+  el('uinfo').textContent = (me.name||'Xodim') + ' · ' + ROLES.join(', ');
+  const tabs = TABS.filter(t=>ROLES.includes(t.rol));
+  el('tabs').innerHTML = tabs.map(t=>`<button data-t="${t.id}" onclick="ochT('${t.id}')"><span class="i">${t.i}</span>${t.t}</button>`).join('');
+  if(tabs.length){ ochT(tabs[0].id); }
+  if(ROLES.includes('katalog')) qidir('');
+}
+
+/* ---------- KATALOG ---------- */
+let _qt = null;
+el('q') && el('q').addEventListener('input', e=>{ clearTimeout(_qt); _qt=setTimeout(()=>qidir(e.target.value.trim()), 350); });
+
+async function qidir(q){
+  try{
+    const d = await api('/api/admin/products?q='+encodeURIComponent(q));
+    ROWS = d.products || [];
+    if(!ROWS.length){ el('klist').innerHTML = '<div class="empty">Topilmadi 😕</div>'; return; }
+    el('klist').innerHTML = ROWS.map((p,i)=>`
+      <div class="rowi" onclick="ochE(${i})">
+        ${p.photo?`<img src="${p.photo.startsWith('/')?API+p.photo:p.photo}" onerror="this.outerHTML='<div class=ph>📦</div>'">`:'<div class="ph">📦</div>'}
+        <div class="nm">
+          <div class="n">${esc(p.name)}${p.archived?'<span class="b arx">ARXIV</span>':''}${p.edited?'<span class="b ed">✎</span>':''}${p.manual?'<span class="b man">qo\'lda</span>':''}</div>
+          <div class="p">${fmt(p.price)}</div>
+        </div>
+      </div>`).join('') + `<div class="empty" style="padding:12px">${d.total} tadan ${ROWS.length} tasi ko'rsatildi</div>`;
+  }catch(e){ el('klist').innerHTML = '<div class="empty">Yuklab bo\'lmadi — qayta uring</div>'; }
+}
+
+function ochE(i){
+  CUR = ROWS[i];
+  el('e-title').textContent = '✏️ ' + CUR.name;
+  el('e-name').value = CUR.name;
+  el('e-price').value = CUR.price;
+  el('e-file').value = '';
+  const pv = el('e-prev');
+  if(CUR.photo){ pv.src = CUR.photo.startsWith('/')?API+CUR.photo:CUR.photo; pv.style.display='block'; }
+  else pv.style.display='none';
+  el('e-arx').classList.toggle('on', !!CUR.archived);
+  el('e-del').style.display = CUR.manual ? 'block' : 'none';
+  ochT('tahrir');
+}
+
+async function saqla(){
+  if(!CUR) return;
+  const btn = el('e-save'); btn.disabled = true; btn.textContent = '⏳ Saqlanmoqda...';
+  try{
+    const body = {id: CUR.id, archived: el('e-arx').classList.contains('on')};
+    const nom = el('e-name').value.trim();
+    const narx = parseFloat(el('e-price').value);
+    if(nom && nom !== CUR.name) body.name = nom;
+    if(narx && narx !== CUR.price) body.price = narx;
+    const r = await api('/api/admin/save', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+    if(!r.ok) throw 0;
+    const f = el('e-file').files[0];
+    if(f){
+      const fd = new FormData(); fd.append('id', CUR.id); fd.append('file', f, 'photo.jpg');
+      const pr = await api('/api/admin/photo', {method:'POST', body: fd});
+      if(!pr.ok) throw 0;
+    }
+    toast('💾 Saqlandi!');
+    ochT('katalog'); qidir(el('q').value.trim());
+  }catch(e){ toast('⚠️ Saqlashda xatolik'); }
+  btn.disabled = false; btn.textContent = '💾 Saqlash';
+}
+
+async function aslga(){
+  if(!CUR) return;
+  if(!confirm('Barcha tahrirlar (nom/narx/rasm) o\'chib, asl holiga qaytadi. Davom etasizmi?')) return;
+  try{
+    await api('/api/admin/reset', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: CUR.id})});
+    toast('↩️ Asl holiga qaytdi');
+    ochT('katalog'); qidir(el('q').value.trim());
+  }catch(e){ toast('⚠️ Xatolik'); }
+}
+
+/* ---------- QO'LDA ---------- */
+async function manQosh(){
+  const nom = el('a-name').value.trim(), narx = parseFloat(el('a-price').value), sku = el('a-sku').value.trim();
+  if(nom.length<3 || !narx){ toast('Nom va narxni to\'g\'ri kiriting'); return; }
+  try{
+    const r = await api('/api/admin/manual', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name:nom, price:narx, sku:sku})});
+    if(!r.ok){ toast('⚠️ '+(r.text||'Xatolik')); return; }
+    el('a-name').value=''; el('a-price').value=''; el('a-sku').value='';
+    toast('✅ Qo\'shildi — katalogda!');
+  }catch(e){ toast('⚠️ Xatolik'); }
+}
+
+async function manOchir(){
+  if(!CUR || !CUR.manual) return;
+  if(!confirm('Mahsulot butunlay o\'chiriladi. Davom etasizmi?')) return;
+  try{
+    await api('/api/admin/manual', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({del: CUR.manual})});
+    toast('🗑 O\'chirildi');
+    ochT('katalog'); qidir(el('q').value.trim());
+  }catch(e){ toast('⚠️ Xatolik'); }
+}
+
+/* ---------- BUYURTMA / STAT ---------- */
+async function yukleOrders(){
+  try{
+    const d = await api('/api/admin/orders');
+    if(!d.orders || !d.orders.length){ el('olist').innerHTML='<div class="empty">Hozircha buyurtma yo\'q 🛍</div>'; return; }
+    el('olist').innerHTML = d.orders.map(o=>`
+      <div class="ord">
+        <div class="h"><span>📅 ${esc(o.date)}</span><span class="s2">${fmt(o.total)}</span></div>
+        <div class="m">👤 ${esc(o.name||'—')} · 📞 +${esc(o.phone)}\n${esc(o.items)}</div>
+      </div>`).join('');
+  }catch(e){ el('olist').innerHTML='<div class="empty">Yuklab bo\'lmadi</div>'; }
+}
+
+async function yukleStat(){
+  try{
+    const d = await api('/api/admin/stats');
+    el('scards').innerHTML = `
+      <div class="s"><div class="v">${d.bugun.soni}</div><div class="l">Bugun buyurtma<br>${fmt(d.bugun.summa)}</div></div>
+      <div class="s"><div class="v">${d.hafta.soni}</div><div class="l">7 kun<br>${fmt(d.hafta.summa)}</div></div>
+      <div class="s"><div class="v">${d.oy.soni}</div><div class="l">30 kun<br>${fmt(d.oy.summa)}</div></div>
+      <div class="s"><div class="v">${d.mijozlar}</div><div class="l">Ro'yxatdagi mijozlar</div></div>`;
+  }catch(e){ el('scards').innerHTML='<div class="empty">Yuklab bo\'lmadi</div>'; }
+}
+
+boshla();
+</script>
+</body>
+</html>
