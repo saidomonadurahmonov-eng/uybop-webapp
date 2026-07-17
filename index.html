@@ -221,6 +221,7 @@ let DATA = {products: [], categories: [], api_url: ''};
 let cart = {};
 let delivMode = 'pickup', MY_QOQON = null;
 let HIDDEN = new Set();
+let OVR = {};
 let activeCat = '', query = '', curView = 'shop';
 const loaded = {history:false, balance:false, profile:false};
 
@@ -246,7 +247,9 @@ async function load(){
     el('updated').textContent = 'Yangilangan: ' + (DATA.generated_at || '');
     if(DATA.authed){ await loadAuthedCatalog(); return; }
     await loadHidden();
+    await loadOverrides();
     applyHidden();
+    applyOverrides();
     renderShop();
     loadManual();
   }catch(e){
@@ -267,6 +270,39 @@ async function loadAuthedCatalog(){
     DATA = {...DATA, products:d.products||[], shelves:d.shelves||[], categories:d.categories||[]};
     renderShop();
   }catch(e){ gateMsg('Katalogni yuklab bo\'lmadi. Birozdan so\'ng qayta urinib ko\'ring.'); }
+}
+async function loadOverrides(){
+  if(!DATA.api_url) return;
+  try{
+    const r = await fetch(DATA.api_url + '/api/overrides');
+    const d = await r.json();
+    OVR = d.map || {};
+  }catch(e){ OVR = {}; }
+}
+function applyOverrides(){
+  if(!Object.keys(OVR).length) return;
+  const ap = p => {
+    const o = OVR[p.id];
+    if(!o) return;
+    if(o.name) p.name = o.name;
+    if(o.price) p.price = o.price;
+    if(o.photo) p.photo = DATA.api_url + o.photo;
+  };
+  (DATA.products||[]).forEach(p=>{
+    ap(p);
+    if(p.variants){
+      p.variants.forEach(v=>{
+        const o = OVR[v.id];
+        if(o){
+          if(o.name) v.label = o.name;
+          if(o.price) v.price = o.price;
+          if(o.photo) v.photo = DATA.api_url + o.photo;
+        }
+      });
+      p.price = Math.min.apply(null, p.variants.map(v=>v.price));
+    }
+  });
+  (DATA.shelves||[]).forEach(sh=>(sh.items||[]).forEach(ap));
 }
 async function loadHidden(){
   if(!DATA.api_url) return;
@@ -296,6 +332,7 @@ async function loadManual(){
     const d = await r.json();
     if(d.products && d.products.length){
       DATA.products = (DATA.products||[]).concat(d.products.filter(p=>!HIDDEN.has(p.id)));
+      applyOverrides();
       renderCats(); renderGrid();
     }
   }catch(e){}
