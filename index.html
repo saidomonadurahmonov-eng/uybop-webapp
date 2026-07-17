@@ -363,7 +363,7 @@ function mAddGo(){
     const v=p.variants.find(x=>x.id===mVarId)||p.variants[0];
     const cur=cart[v.id]?cart[v.id].qty:0;
     cart[v.id]={id:v.id, name:p.name+' · '+v.label, price:v.price, photo:v.photo||p.photo, qty:cur+mQty};
-    toast('✅ Savatga qo'shildi'); updateBadge();
+    toast('✅ Savatga qo\'shildi'); updateBadge();
   } else {
     addToCart(mId,mQty);
   }
