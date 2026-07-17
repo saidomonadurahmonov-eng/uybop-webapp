@@ -220,6 +220,7 @@ const LOGIN_HTML = `<div class="empty">📲 Ilovadan to'liq foydalanish (buyurtm
 let DATA = {products: [], categories: [], api_url: ''};
 let cart = {};
 let delivMode = 'pickup', MY_QOQON = null;
+let HIDDEN = new Set();
 let activeCat = '', query = '', curView = 'shop';
 const loaded = {history:false, balance:false, profile:false};
 
@@ -244,6 +245,8 @@ async function load(){
     DATA = await r.json();
     el('updated').textContent = 'Yangilangan: ' + (DATA.generated_at || '');
     if(DATA.authed){ await loadAuthedCatalog(); return; }
+    await loadHidden();
+    applyHidden();
     renderShop();
     loadManual();
   }catch(e){
@@ -265,13 +268,34 @@ async function loadAuthedCatalog(){
     renderShop();
   }catch(e){ gateMsg('Katalogni yuklab bo\'lmadi. Birozdan so\'ng qayta urinib ko\'ring.'); }
 }
+async function loadHidden(){
+  if(!DATA.api_url) return;
+  try{
+    const r = await fetch(DATA.api_url + '/api/hidden');
+    const d = await r.json();
+    HIDDEN = new Set(d.ids || []);
+  }catch(e){ HIDDEN = new Set(); }
+}
+function applyHidden(){
+  if(!HIDDEN.size) return;
+  DATA.products = (DATA.products||[]).filter(p=>{
+    if(HIDDEN.has(p.id)) return false;
+    if(p.variants){
+      p.variants = p.variants.filter(v=>!HIDDEN.has(v.id));
+      if(!p.variants.length) return false;
+      p.price = p.variants[0].price;
+    }
+    return true;
+  });
+  (DATA.shelves||[]).forEach(sh=>{ sh.items = (sh.items||[]).filter(it=>!HIDDEN.has(it.id)); });
+}
 async function loadManual(){
   if(!DATA.api_url) return;
   try{
     const r = await fetch(DATA.api_url + '/api/manual');
     const d = await r.json();
     if(d.products && d.products.length){
-      DATA.products = (DATA.products||[]).concat(d.products);
+      DATA.products = (DATA.products||[]).concat(d.products.filter(p=>!HIDDEN.has(p.id)));
       renderCats(); renderGrid();
     }
   }catch(e){}
@@ -474,6 +498,8 @@ async function checkout(){
       if(d.ok){
         cart = {}; updateBadge();
         showOrderDone(d.text || "✅ Buyurtmangiz qabul qilindi!");
+      } else if(d.reg){
+        showRegPanel();
       } else {
         toast(d.text || "Xatolik. Qayta urinib ko'ring.");
       }
