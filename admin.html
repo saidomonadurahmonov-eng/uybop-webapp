@@ -80,9 +80,11 @@ h3{font-size:15px;margin-bottom:10px}
     <input class="f" id="e-name">
     <label>💰 Narxi (so'm)</label>
     <input class="f" id="e-price" type="number" inputmode="numeric">
-    <label>🖼 Rasm</label>
+    <label>🖼 Rasm (UZ — o'zbekcha infografika)</label>
     <img class="prev" id="e-prev" style="display:none">
     <input class="f mtop" id="e-file" type="file" accept="image/*">
+    <label>🖼 Rasm (RU — ruscha infografika)</label>
+    <input class="f" id="e-file-ru" type="file" accept="image/*">
     <div class="sw"><span class="lbl">📦 Arxivda (katalogda ko'rinmaydi)</span><div class="tgl" id="e-arx" onclick="this.classList.toggle('on')"></div></div>
     <button class="btn p" id="e-save" onclick="saqla()">💾 Saqlash</button>
     <button class="btn g" onclick="aslga()">↩️ Aslga qaytarish (tahrirlarni o'chirish)</button>
@@ -97,7 +99,8 @@ h3{font-size:15px;margin-bottom:10px}
     <label>🏷 Nomi</label><input class="f" id="a-name">
     <label>💰 Narxi (so'm)</label><input class="f" id="a-price" type="number" inputmode="numeric">
     <label>#️⃣ Shtrix-kod (ixtiyoriy)</label><input class="f" id="a-sku">
-    <label>🖼 Rasm (ixtiyoriy)</label><input class="f" id="a-file" type="file" accept="image/*">
+    <label>🖼 Rasm UZ (ixtiyoriy)</label><input class="f" id="a-file" type="file" accept="image/*">
+    <label>🖼 Rasm RU (ixtiyoriy)</label><input class="f" id="a-file-ru" type="file" accept="image/*">
     <button class="btn p" id="a-btn" onclick="manQosh()">➕ Qo'shish</button>
   </div>
   <div class="card" style="padding:12px 14px">
@@ -193,7 +196,7 @@ function ochE(i){
   el('e-title').textContent = '✏️ ' + CUR.name;
   el('e-name').value = CUR.name;
   el('e-price').value = CUR.price;
-  el('e-file').value = '';
+  el('e-file').value = ''; el('e-file-ru').value = '';
   const pv = el('e-prev');
   if(CUR.photo){ pv.src = CUR.photo.startsWith('/')?API+CUR.photo:CUR.photo; pv.style.display='block'; }
   else pv.style.display='none';
@@ -218,6 +221,12 @@ async function saqla(){
       const fd = new FormData(); fd.append('id', CUR.id); fd.append('file', f, 'photo.jpg');
       const pr = await api('/api/admin/photo', {method:'POST', body: fd});
       if(!pr.ok) throw 0;
+    }
+    const fr = el('e-file-ru').files[0];
+    if(fr){
+      const fd2 = new FormData(); fd2.append('id', CUR.id + '_ru'); fd2.append('file', fr, 'photo.jpg');
+      const pr2 = await api('/api/admin/photo', {method:'POST', body: fd2});
+      if(!pr2.ok) throw 0;
     }
     toast('💾 Saqlandi!');
     ochT('katalog'); qidir(el('q').value.trim());
@@ -249,7 +258,7 @@ async function manQosh(){
       const pr = await api('/api/admin/photo', {method:'POST', body: fd});
       if(!pr.ok) toast('⚠️ Mahsulot qo\'shildi, lekin rasm yuklanmadi — 🗂 dan qayta uring');
     }
-    el('a-name').value=''; el('a-price').value=''; el('a-sku').value=''; el('a-file').value='';
+    el('a-name').value=''; el('a-price').value=''; el('a-sku').value=''; el('a-file').value=''; el('a-file-ru').value='';
     toast('✅ Qo\'shildi — katalogda!');
   }catch(e){ toast('⚠️ Xatolik'); }
   btn.disabled = false; btn.textContent = '➕ Qo\'shish';
