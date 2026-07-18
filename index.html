@@ -106,6 +106,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .modal.show{display:flex}
 .sheet{background:var(--bg);width:100%;max-height:88vh;border-radius:18px 18px 0 0;overflow-y:auto;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
 .sheet img.big{width:100%;max-height:46vh;object-fit:contain;background:var(--card2)}
+.sheet .gal{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;background:var(--card2);scrollbar-width:none}
+.sheet .gal::-webkit-scrollbar{display:none}
+.sheet .gal img,.sheet .gal video{flex:0 0 100%;width:100%;max-height:46vh;object-fit:contain;scroll-snap-align:center}
+.gdots{display:flex;gap:6px;justify-content:center;padding:8px 0 0}
+.gdots span{width:7px;height:7px;border-radius:50%;background:var(--hint);opacity:.4}
+.gdots span.on{background:var(--accent);opacity:1}
 .sheet .body{padding:14px 16px}
 .sheet h2{font-size:17px;line-height:1.3}
 .sheet .shbtn{flex:0 0 40px;width:40px;height:40px;border:none;border-radius:12px;background:var(--card2);color:var(--text);font-size:18px;cursor:pointer}
@@ -344,6 +350,8 @@ function applyOverrides(){
     if(o.photo_ru) p.photo_ru = DATA.api_url + o.photo_ru;
     if(o.info_uz) p.info_uz = o.info_uz;
     if(o.info_ru) p.info_ru = o.info_ru;
+    if(o.gallery) p.gallery = o.gallery.map(u=>DATA.api_url+u);
+    if(o.video) p.video = DATA.api_url + o.video;
   };
   (DATA.products||[]).forEach(p=>{
     ap(p);
@@ -357,6 +365,8 @@ function applyOverrides(){
           if(o.photo_ru) v.photo_ru = DATA.api_url + o.photo_ru;
           if(o.info_uz && !p.info_uz) p.info_uz = o.info_uz;
           if(o.info_ru && !p.info_ru) p.info_ru = o.info_ru;
+          if(o.gallery && !p.gallery) p.gallery = o.gallery.map(u=>DATA.api_url+u);
+          if(o.video && !p.video) p.video = DATA.api_url + o.video;
         }
       });
       p.price = Math.min.apply(null, p.variants.map(v=>v.price));
@@ -465,8 +475,17 @@ function openProduct(id){
   const v0 = p.variants ? p.variants[0] : null;
   const ph0 = (v0&&fotoOf(v0)) || fotoOf(p);
   const inf = (LANG==='ru' ? (p.info_ru||p.info_uz) : (p.info_uz||p.info_ru)) || '';
+  const slaydlar = [];
+  if(ph0) slaydlar.push({t:'img', u:ph0, main:true});
+  (p.gallery||[]).forEach(u=>slaydlar.push({t:'img', u}));
+  if(p.video) slaydlar.push({t:'vid', u:p.video});
   el('psheet').innerHTML = `
-    ${ph0?`<img class="big" id="mimg" src="${ph0}">`:`<img class="big" id="mimg" style="display:none">`}
+    ${slaydlar.length>1
+      ? `<div class="gal" id="mgal" onscroll="galDots()">${slaydlar.map(s=> s.t==='vid'
+           ? `<video src="${s.u}" controls playsinline preload="metadata"></video>`
+           : `<img ${s.main?'id="mimg"':''} src="${s.u}">`).join('')}</div>
+         <div class="gdots" id="mdots">${slaydlar.map((_,i)=>`<span class="${i?'':'on'}"></span>`).join('')}</div>`
+      : (ph0?`<img class="big" id="mimg" src="${ph0}">`:`<img class="big" id="mimg" style="display:none">`)}
     <div class="body">
       <div style="display:flex;gap:10px;align-items:flex-start">
         <h2 style="flex:1">${esc(p.name)}</h2>
@@ -483,6 +502,11 @@ function openProduct(id){
     </div>`;
   el('pmodal').classList.add('show');
   bbSync();
+}
+function galDots(){
+  const g=el('mgal'), d=el('mdots'); if(!g||!d) return;
+  const i=Math.round(g.scrollLeft/Math.max(g.clientWidth,1));
+  Array.from(d.children).forEach((s,j)=>s.classList.toggle('on', j===i));
 }
 function mClamp(n){ n=parseInt(n); if(isNaN(n)||n<1) n=1; if(n>999) n=999; return n; }
 function mAdj(d){ mQty=mClamp(mQty+d); el('mqv').value=mQty; }
@@ -519,7 +543,11 @@ function bbSync(){
     else tg.BackButton.hide();
   }catch(e){}
 }
-function closeSheet(){ el('pmodal').classList.remove('show'); bbSync(); }
+function closeSheet(){
+  el('pmodal').classList.remove('show');
+  document.querySelectorAll('#psheet video').forEach(v=>{ try{v.pause();}catch(e){} });
+  bbSync();
+}
 if(tg && tg.BackButton){
   try{
     tg.BackButton.onClick(()=>{
