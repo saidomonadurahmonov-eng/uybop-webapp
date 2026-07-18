@@ -33,6 +33,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .brandrow .logo{width:36px;height:36px;border-radius:10px;background:var(--accent);color:#08131f;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;flex:0 0 auto}
 .brandrow .bname{color:#fff;font-size:16px;font-weight:600;line-height:1.15}
 .brandrow .bsub{color:#93a7bb;font-size:11px;margin-top:1px}
+.lbtn{padding:6px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#cdd8ea;font-size:12.5px;font-weight:700;cursor:pointer}
+.lbtn.on{background:#F7941D;border-color:#F7941D;color:#132A52}
 .brandbar .search{margin:12px 0 0}
 .brandbar .search input{background:#fff;color:#1a1a1a}
 .section-title{font-size:17px;font-weight:700;margin:18px 16px 10px;color:var(--text);letter-spacing:-.2px}
@@ -128,7 +130,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div class="brandbar">
     <div class="brandrow">
       
-      <div><div class="bname" id="shopName" style="font-size:22px;font-weight:800;letter-spacing:.5px">UY<span style="color:#F7941D">BOP</span></div><div class="bsub">Maishiy texnika · Qo'qon</div></div>
+      <div><div class="bname" id="shopName" style="font-size:22px;font-weight:800;letter-spacing:.5px">UY<span style="color:#F7941D">BOP</span></div><div class="bsub">Maishiy texnika · Qo'qon</div></div><div style="margin-left:auto;display:flex;gap:6px"><button class="lbtn" id="lb-uz" onclick="setLang('uz')">UZ</button><button class="lbtn" id="lb-ru" onclick="setLang('ru')">RU</button></div>
     </div>
     <div class="search"><input id="q" type="search" placeholder="Mahsulot yoki artikul..."></div>
   </div>
@@ -225,7 +227,57 @@ let OVR = {};
 let activeCat = '', query = '', curView = 'shop';
 const loaded = {history:false, balance:false, profile:false};
 
-const fmt = n => new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + " so'm";
+let LANG = localStorage.getItem('uybop_lang') || 'uz';
+const T = {
+  uz: {
+    som:"so'm", qidiruv:"Mahsulot yoki artikul...", yangi:"🆕 Yangi kelganlar",
+    kategoriyalar:"Kategoriyalar", hammasi:"Hammasi", barcha:"Barcha mahsulotlar",
+    natija:"Qidiruv natijasi", topilmadi:"Hech narsa topilmadi 😕", dan:"dan",
+    xil:"xil", ta:"ta", savat_h:"🛒 Savat", tarix_h:"🧾 Xaridlar tarixi",
+    balans_h:"💰 Balans", kabinet_h:"👤 Mijoz kabineti",
+    nav_shop:"Do'kon", nav_cart:"Savat", nav_hist:"Tarix", nav_bal:"Balans", nav_prof:"Kabinet",
+    savatga:"🛒 Savatga qo'shish", mavjud:"✅ Sotuvda mavjud", artikul:"Artikul",
+    qoshildi:"✅ Savatga qo'shildi",
+    bosh:"Savat bo'sh.<br>Do'kondan mahsulot tanlang.", jami:"Jami:",
+    yetkazish:"🚚 Yetkazib berish / to'lov:", buyurtma:"✅ Buyurtma berish",
+    davom:"🛍 Xaridni davom ettirish",
+    d_pickup:"🏪 Olib ketish", d_pickup_i:"To'lov do'konda",
+    d_ideal:"🚕 IDEAL taxi", d_ideal_i:"Naqd — pulni taxichiga berasiz",
+    d_yandex:"🚖 Yandex taxi", d_yandex_i:"Karta orqali · arzon yo'lkira",
+    d_bts:"📦 BTS pochta", d_bts_i:"Karta orqali · viloyatlarga",
+    qoqon_note:"📍 Hududingiz Qo'qondan tashqarida — yetkazish BTS pochta, to'lov karta orqali.",
+    reg_t:"Buyurtma berish uchun ro'yxatdan o'ting",
+    reg_b:"Bu 30 soniya: botda <b>telefon raqamingizni</b> yuborasiz — buyurtmalaringiz shu raqamga bog'lanadi.<br>Savatingiz saqlanib qoladi.",
+    reg_btn:"📱 Ro'yxatdan o'tish",
+  },
+  ru: {
+    som:"сум", qidiruv:"Товар или артикул...", yangi:"🆕 Новинки",
+    kategoriyalar:"Категории", hammasi:"Все", barcha:"Все товары",
+    natija:"Результаты поиска", topilmadi:"Ничего не найдено 😕", dan:"и выше",
+    xil:"вида", ta:"шт", savat_h:"🛒 Корзина", tarix_h:"🧾 История покупок",
+    balans_h:"💰 Баланс", kabinet_h:"👤 Кабинет",
+    nav_shop:"Магазин", nav_cart:"Корзина", nav_hist:"История", nav_bal:"Баланс", nav_prof:"Кабинет",
+    savatga:"🛒 В корзину", mavjud:"✅ В наличии", artikul:"Артикул",
+    qoshildi:"✅ Добавлено в корзину",
+    bosh:"Корзина пуста.<br>Выберите товары в магазине.", jami:"Итого:",
+    yetkazish:"🚚 Доставка / оплата:", buyurtma:"✅ Оформить заказ",
+    davom:"🛍 Продолжить покупки",
+    d_pickup:"🏪 Самовывоз", d_pickup_i:"Оплата в магазине",
+    d_ideal:"🚕 IDEAL такси", d_ideal_i:"Наличными — отдаёте таксисту",
+    d_yandex:"🚖 Яндекс такси", d_yandex_i:"Картой · дешёвая доставка",
+    d_bts:"📦 Почта BTS", d_bts_i:"Картой · в регионы",
+    qoqon_note:"📍 Вы за пределами Коканда — доставка почтой BTS, оплата картой.",
+    reg_t:"Зарегистрируйтесь, чтобы оформить заказ",
+    reg_b:"Это 30 секунд: отправьте боту <b>номер телефона</b> — заказы привяжутся к нему.<br>Корзина сохранится.",
+    reg_btn:"📱 Регистрация",
+  },
+};
+const t = k => (T[LANG] && T[LANG][k]) || T.uz[k] || k;
+const fmt = n => new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + ' ' + t('som');
+function fotoOf(p){
+  if(!p) return '';
+  return LANG === 'ru' ? (p.photo_ru || p.photo || '') : (p.photo || p.photo_ru || '');
+}
 const el = id => document.getElementById(id);
 const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 function toast(m){ const t=el('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',1600); }
@@ -287,6 +339,7 @@ function applyOverrides(){
     if(o.name) p.name = o.name;
     if(o.price) p.price = o.price;
     if(o.photo) p.photo = DATA.api_url + o.photo;
+    if(o.photo_ru) p.photo_ru = DATA.api_url + o.photo_ru;
   };
   (DATA.products||[]).forEach(p=>{
     ap(p);
@@ -297,6 +350,7 @@ function applyOverrides(){
           if(o.name) v.label = o.name;
           if(o.price) v.price = o.price;
           if(o.photo) v.photo = DATA.api_url + o.photo;
+          if(o.photo_ru) v.photo_ru = DATA.api_url + o.photo_ru;
         }
       });
       p.price = Math.min.apply(null, p.variants.map(v=>v.price));
@@ -349,21 +403,21 @@ function renderShelves(){
   const shelves = DATA.shelves || [];
   if(!shelves.length){ el('shelves').innerHTML=''; return; }
   el('shelves').innerHTML = shelves.map(sh=>`
-    <div class="section-title">${esc(sh.title)}</div>
+    <div class="section-title">${esc(sh.key==='new'?t('yangi'):sh.title)}</div>
     <div class="news">
       ${sh.items.map(p=>`
         <div class="news-card" onclick="openProduct('${p.id}')">
           <span class="nbadge ${BADGE_CLASS[sh.key]||''}">${p.disc?('-'+p.disc+'%'):esc(sh.badge)}</span>
-          ${p.photo?`<img src="${p.photo}" loading="lazy" onerror="this.style.display='none'">`:`<div style="width:130px;height:130px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:34px">📦</div>`}
+          ${fotoOf(p)?`<img src="${fotoOf(p)}" loading="lazy" onerror="this.style.display='none'">`:`<div style="width:130px;height:130px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:34px">📦</div>`}
           <div class="nname">${esc(p.name)}</div>
-          <div class="nprice">${p.old_price?`<span class="oldp">${fmt(p.old_price)}</span>`:''}${fmt(p.price)}${p.variants?' <span style="font-weight:400;font-size:11px;color:var(--hint)">dan</span>':''}</div>
+          <div class="nprice">${p.old_price?`<span class="oldp">${fmt(p.old_price)}</span>`:''}${fmt(p.price)}${p.variants?' <span style="font-weight:400;font-size:11px;color:var(--hint)">'+t('dan')+'</span>':''}</div>
         </div>`).join('')}
     </div>`).join('');
 }
 function renderCats(){
   const total=(DATA.products||[]).length;
-  const cats=[{id:'',name:'Hammasi',count:total}].concat(DATA.categories||[]);
-  el('cats').innerHTML=cats.map(c=>`<div class="cattile ${activeCat===c.id?'active':''}" onclick="setCat('${c.id}')"><span class="cnm">${esc(c.name)}</span>${c.count?`<span class="cnt">${c.count} ta</span>`:''}</div>`).join('');
+  const cats=[{id:'',name:t('hammasi'),count:total}].concat(DATA.categories||[]);
+  el('cats').innerHTML=cats.map(c=>`<div class="cattile ${activeCat===c.id?'active':''}" onclick="setCat('${c.id}')"><span class="cnm">${esc(c.name)}</span>${c.count?`<span class="cnt">${c.count} ${t('ta')}</span>`:''}</div>`).join('');
 }
 function setCat(id){ activeCat=id; renderCats(); renderGrid(); }
 function filtered(){
@@ -378,8 +432,8 @@ function renderGrid(){
   el('grid').innerHTML = list.slice(0,300).map(p=>`
     <div class="pcard">
       <div class="pimg" onclick="openProduct('${p.id}')">
-        ${p.disc?`<span class="discbadge">-${p.disc}%</span>`:(p.variants?`<span class="discbadge" style="background:#8b5cf6">${p.variants.length} xil</span>`:'')}
-        ${p.photo?`<img src="${p.photo}" loading="lazy" onerror="this.outerHTML='<div class=noimg>📦</div>'">`:`<div class="noimg">📦</div>`}
+        ${p.disc?`<span class="discbadge">-${p.disc}%</span>`:(p.variants?`<span class="discbadge" style="background:#8b5cf6">${p.variants.length} ${t('xil')}</span>`:'')}
+        ${fotoOf(p)?`<img src="${fotoOf(p)}" loading="lazy" onerror="this.outerHTML='<div class=noimg>📦</div>'">`:`<div class="noimg">📦</div>`}
         <button class="qadd" onclick="event.stopPropagation();quickAdd('${p.id}')">+</button>
       </div>
       <div class="pinfo" onclick="openProduct('${p.id}')">
@@ -393,8 +447,8 @@ function quickAdd(id){ const p=getP(id); if(p&&p.variants){ openProduct(id); ret
 function addToCart(id, qty){
   const p = getP(id); if(!p) return;
   const cur = cart[id] ? cart[id].qty : 0;
-  cart[id] = {id:p.id, name:p.name, price:p.price, photo:p.photo, qty:cur+qty};
-  toast('✅ Savatga qo\'shildi');
+  cart[id] = {id:p.id, name:p.name, price:p.price, photo:fotoOf(p), qty:cur+qty};
+  toast(t('qoshildi'));
   updateBadge();
 }
 
@@ -403,18 +457,18 @@ function openProduct(id){
   const p=getP(id); if(!p) return; mId=id; mQty=1;
   mVarId = p.variants ? p.variants[0].id : null;
   const v0 = p.variants ? p.variants[0] : null;
-  const ph0 = (v0&&v0.photo) || p.photo;
+  const ph0 = (v0&&fotoOf(v0)) || fotoOf(p);
   el('psheet').innerHTML = `
     ${ph0?`<img class="big" id="mimg" src="${ph0}">`:`<img class="big" id="mimg" style="display:none">`}
     <div class="body">
       <h2>${esc(p.name)}</h2>
       ${p.variants?`<div style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px">${p.variants.map(v=>`<button class="vchip${v.id===mVarId?' sel':''}" id="vc-${v.id}" onclick="mSelVar('${v.id}')">${esc(v.label)}</button>`).join('')}</div>`:''}
       <div class="price" id="mprice">${p.old_price?`<span class="oldp" style="font-size:16px">${fmt(p.old_price)}</span> `:''}${fmt(v0?v0.price:p.price)}${p.disc?` <span class="discbadge" style="position:static;display:inline-block">-${p.disc}%</span>`:''}</div>
-      <div class="meta">✅ Sotuvda mavjud${p.sku?(' · Artikul: '+esc(p.sku)):''}</div>
+      <div class="meta">${t('mavjud')}${p.sku?(' · '+t('artikul')+': '+esc(p.sku)):''}</div>
       <div class="qtyrow">
         <button onclick="mAdj(-1)">−</button><input class="qv" id="mqv" type="number" inputmode="numeric" min="1" max="999" value="1" oninput="mSet(this.value)" onchange="mSync()"><button onclick="mAdj(1)">+</button>
       </div>
-      <button class="addbtn" onclick="mAddGo()">🛒 Savatga qo'shish</button>
+      <button class="addbtn" onclick="mAddGo()">${t('savatga')}</button>
     </div>`;
   el('pmodal').classList.add('show');
 }
@@ -427,7 +481,7 @@ function mSelVar(id){
   p.variants.forEach(v=>{ const c=el('vc-'+v.id); if(c) c.classList.toggle('sel', v.id===id); });
   const v=p.variants.find(x=>x.id===id); if(!v) return;
   el('mprice').innerHTML = fmt(v.price);
-  const im=el('mimg'); const ph=v.photo||p.photo;
+  const im=el('mimg'); const ph=fotoOf(v)||fotoOf(p);
   if(im){ if(ph){ im.src=ph; im.style.display=''; } else { im.style.display='none'; } }
 }
 function mAddGo(){
@@ -436,8 +490,8 @@ function mAddGo(){
   if(p && p.variants){
     const v=p.variants.find(x=>x.id===mVarId)||p.variants[0];
     const cur=cart[v.id]?cart[v.id].qty:0;
-    cart[v.id]={id:v.id, name:p.name+' · '+v.label, price:v.price, photo:v.photo||p.photo, qty:cur+mQty};
-    toast('✅ Savatga qo\'shildi'); updateBadge();
+    cart[v.id]={id:v.id, name:p.name+' · '+v.label, price:v.price, photo:fotoOf(v)||fotoOf(p), qty:cur+mQty};
+    toast(t('qoshildi')); updateBadge();
   } else {
     addToCart(mId,mQty);
   }
@@ -451,21 +505,23 @@ function optom(t){ const pct=OPTOM_PCT(), min=OPTOM_MIN(); if(pct>0&&min>0&&t>=m
 function cartCount(){ return Object.values(cart).reduce((a,c)=>a+c.qty,0); }
 function cartTotal(){ return Object.values(cart).reduce((a,c)=>a+c.qty*c.price,0); }
 function updateBadge(){ const n=cartCount(); const b=el('navBadge'); b.style.display=n?'flex':'none'; b.textContent=n; if(curView==='cart') renderCart(); }
-const DELIVS = [
-  {id:'pickup', nom:"🏪 Olib ketish",  izoh:"To'lov do'konda",                 qoqon:false},
-  {id:'ideal',  nom:"🚕 IDEAL taxi",   izoh:"Naqd \u2014 pulni taxichiga berasiz", qoqon:true},
-  {id:'yandex', nom:"🚖 Yandex taxi",  izoh:"Karta orqali \u00b7 arzon yo'lkira",  qoqon:true},
-  {id:'bts',    nom:"📦 BTS pochta",   izoh:"Karta orqali \u00b7 viloyatlarga",    qoqon:false},
-];
+function delivList(){
+  return [
+    {id:'pickup', nom:t('d_pickup'), izoh:t('d_pickup_i'), qoqon:false},
+    {id:'ideal',  nom:t('d_ideal'),  izoh:t('d_ideal_i'),  qoqon:true},
+    {id:'yandex', nom:t('d_yandex'), izoh:t('d_yandex_i'), qoqon:true},
+    {id:'bts',    nom:t('d_bts'),    izoh:t('d_bts_i'),    qoqon:false},
+  ];
+}
 function delivOptsHtml(){
-  const list = DELIVS.filter(d => MY_QOQON===false ? !d.qoqon : true);
+  const list = delivList().filter(d => MY_QOQON===false ? !d.qoqon : true);
   if(!list.some(d=>d.id===delivMode)) delivMode = list[0].id;
   let h = list.map(d=>`
     <div onclick="setDeliv('${d.id}')" style="display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;margin:6px 0;cursor:pointer;border:1.5px solid ${d.id===delivMode?'var(--accent)':'var(--line)'};background:${d.id===delivMode?'rgba(239,93,168,.12)':'var(--card2)'}">
       <div style="width:18px;height:18px;flex:0 0 18px;border-radius:50%;border:2px solid ${d.id===delivMode?'var(--accent)':'var(--hint)'};display:flex;align-items:center;justify-content:center">${d.id===delivMode?'<div style="width:9px;height:9px;border-radius:50%;background:var(--accent)"></div>':''}</div>
       <div><div style="font-size:14px;font-weight:600">${d.nom}</div><div style="font-size:11.5px;color:var(--hint)">${d.izoh}</div></div>
     </div>`).join('');
-  if(MY_QOQON===false) h += `<div class="note">📍 Hududingiz Qo'qondan tashqarida \u2014 yetkazish BTS pochta, to'lov karta orqali.</div>`;
+  if(MY_QOQON===false) h += `<div class="note">${t('qoqon_note')}</div>`;
   return h;
 }
 function setDeliv(id){ delivMode=id; const dd=el('dopts'); if(dd) dd.innerHTML=delivOptsHtml(); }
@@ -482,7 +538,7 @@ async function aniqlaQoqon(){
 }
 function renderCart(){
   const items = Object.values(cart);
-  if(!items.length){ el('cartBody').innerHTML='<div class="empty">Savat bo\'sh.<br>Do\'kondan mahsulot tanlang.</div>'; return; }
+  if(!items.length){ el('cartBody').innerHTML='<div class="empty">'+t('bosh')+'</div>'; return; }
   const t = cartTotal(); const o = optom(t);
   el('cartBody').innerHTML = `
     <div class="cartlist">
@@ -494,14 +550,14 @@ function renderCart(){
         </div>`).join('')}
     </div>
     <div class="cartbox">
-      <div class="total"><span>Jami:</span><span>${fmt(t)}</span></div>
+      <div class="total"><span>${t('jami')}</span><span>${fmt(t)}</span></div>
       ${o.is
         ? `<div class="discount"><span>🏷 Optom chegirma (${OPTOM_PCT()}%):</span><span>−${fmt(o.d)}</span></div>
            <div class="total"><span>💳 To'lanadigan:</span><span>${fmt(o.pay)}</span></div>`
         : (OPTOM_PCT()>0 ? `<div class="note" style="background:rgba(255,149,0,.12);padding:8px 10px;border-radius:10px;margin:6px 0">🏷 Optomgacha yana <b>${fmt(OPTOM_MIN()-t)}</b> qoldi — ${OPTOM_PCT()}% chegirma!</div>` : '')}
-      <div class="note" style="margin:10px 0 2px;font-weight:700;color:var(--text)">🚚 Yetkazib berish / to'lov:</div>
+      <div class="note" style="margin:10px 0 2px;font-weight:700;color:var(--text)">${t('yetkazish')}</div>
       <div id="dopts">${delivOptsHtml()}</div>
-      <button class="bigbtn" onclick="checkout()">✅ Buyurtma berish</button>
+      <button class="bigbtn" onclick="checkout()">${t('buyurtma')}</button>
     </div>`;
   aniqlaQoqon();
 }
@@ -553,13 +609,12 @@ function showRegPanel(){
   el('cartBody').innerHTML = `
     <div class="panel" style="text-align:center">
       <div style="font-size:44px">📱</div>
-      <h3 style="margin:10px 0 6px">Buyurtma berish uchun ro'yxatdan o'ting</h3>
+      <h3 style="margin:10px 0 6px">${t('reg_t')}</h3>
       <div style="color:var(--hint);font-size:13.5px;line-height:1.55">
-        Bu 30 soniya: botda <b>telefon raqamingizni</b> yuborasiz —
-        buyurtmalaringiz shu raqamga bog'lanadi.<br>Savatingiz saqlanib qoladi.
+        ${t('reg_b')}
       </div>
     </div>
-    <button class="bigbtn" style="margin:0 16px;width:calc(100% - 32px)" onclick="goReg()">📱 Ro'yxatdan o'tish</button>`;
+    <button class="bigbtn" style="margin:0 16px;width:calc(100% - 32px)" onclick="goReg()">${t('reg_btn')}</button>`;
 }
 function goReg(){
   const link = 'https://t.me/' + (DATA.bot || 'Uybopuz_bot') + '?start=reg';
@@ -572,7 +627,7 @@ function goReg(){
   }
 }
 function showOrderDone(text){
-  el('cartBody').innerHTML = `<div class="panel" style="text-align:center"><div style="font-size:40px">✅</div><div style="white-space:pre-wrap;font-size:14px;line-height:1.5;margin-top:8px">${text.replace(/<[^>]+>/g,'')}</div></div><button class="bigbtn" style="margin:0 16px" onclick="switchView('shop')">🛍 Xaridni davom ettirish</button>`;
+  el('cartBody').innerHTML = `<div class="panel" style="text-align:center"><div style="font-size:40px">✅</div><div style="white-space:pre-wrap;font-size:14px;line-height:1.5;margin-top:8px">${text.replace(/<[^>]+>/g,'')}</div></div><button class="bigbtn" style="margin:0 16px" onclick="switchView('shop')">${t('davom')}</button>`;
 }
 
 /* ---------- TARIX / BALANS / KABINET ---------- */
@@ -635,11 +690,39 @@ el('q').addEventListener('input', e=>{
   el('shelves').style.display=sr?'none':'';
   el('cats').style.display=sr?'none':'';
   el('catTitle').style.display=sr?'none':'';
-  el('gridTitle').textContent=sr?'Qidiruv natijasi':'Barcha mahsulotlar';
+  el('gridTitle').textContent=sr?t('natija'):t('barcha');
   renderGrid();
 });
 el('pmodal').addEventListener('click', e=>{ if(e.target.id==='pmodal') el('pmodal').classList.remove('show'); });
 
+function setLang(l){
+  LANG = l;
+  try{ localStorage.setItem('uybop_lang', l); }catch(e){}
+  applyLang();
+  renderShop();
+  if(curView==='cart') renderCart();
+}
+function applyLang(){
+  const q0 = el('q'); if(q0) q0.placeholder = t('qidiruv');
+  const ct = el('catTitle'); if(ct) ct.textContent = t('kategoriyalar');
+  const gt = el('gridTitle'); if(gt) gt.textContent = query ? t('natija') : t('barcha');
+  const em = el('empty'); if(em && em.style.display==='none') em.innerHTML = t('topilmadi');
+  const h = (sel, k) => { const e = document.querySelector(sel); if(e) e.textContent = t(k); };
+  h('#v-cart h1','savat_h'); h('#v-history h1','tarix_h');
+  h('#v-balance h1','balans_h'); h('#v-profile h1','kabinet_h');
+  const ikon = {shop:'🛍', cart:'🛒', history:'🧾', balance:'💰', profile:'👤'};
+  const lab = {shop:t('nav_shop'), cart:t('nav_cart'), history:t('nav_hist'), balance:t('nav_bal'), profile:t('nav_prof')};
+  document.querySelectorAll('#nav button').forEach(b=>{
+    const v = b.dataset.v;
+    const badge = v==='cart' ? '<span class="badge" id="navBadge" style="display:none">0</span>' : '';
+    b.innerHTML = `<span class="ic">${ikon[v]}</span>${lab[v]}${badge}`;
+  });
+  updateBadge();
+  const lu = el('lb-uz'), lr = el('lb-ru');
+  if(lu) lu.classList.toggle('on', LANG==='uz');
+  if(lr) lr.classList.toggle('on', LANG==='ru');
+}
+applyLang();
 load();
 
 // PWA: service worker (APK/o'rnatish uchun; Telegram ichida ham zararsiz)
