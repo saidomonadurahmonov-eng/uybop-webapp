@@ -147,13 +147,23 @@ const TABS = [
   {id:'stat', i:'📊', t:'Statistika', rol:'osish'},
 ];
 
+let CURV = '';
 function ochT(id){
+  CURV = id;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   el('v-'+id).classList.add('on');
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.t===id));
   if(id==='buyurtma') yukleOrders();
   if(id==='stat') yukleStat();
   window.scrollTo(0,0);
+  bbSync();
+}
+function bbSync(){
+  if(!tg || !tg.BackButton) return;
+  try{ if(CURV==='tahrir') tg.BackButton.show(); else tg.BackButton.hide(); }catch(e){}
+}
+if(tg && tg.BackButton){
+  try{ tg.BackButton.onClick(()=>{ if(CURV==='tahrir') ochT('katalog'); }); }catch(e){}
 }
 
 async function boshla(){
