@@ -80,6 +80,10 @@ h3{font-size:15px;margin-bottom:10px}
     <input class="f" id="e-name">
     <label>💰 Narxi (so'm)</label>
     <input class="f" id="e-price" type="number" inputmode="numeric">
+    <label>ℹ️ Tavsif — o'zbekcha (kartochkada ko'rinadi)</label>
+    <textarea class="f" id="e-info-uz" rows="3" placeholder="Masalan: 6 kishilik chinni serviz, sovg'a qutisida"></textarea>
+    <label>ℹ️ Tavsif — ruscha</label>
+    <textarea class="f" id="e-info-ru" rows="3" placeholder="Например: фарфоровый сервиз на 6 персон, в подарочной коробке"></textarea>
     <label>🖼 Rasm (UZ — o'zbekcha infografika)</label>
     <img class="prev" id="e-prev" style="display:none">
     <input class="f mtop" id="e-file" type="file" accept="image/*">
@@ -99,6 +103,8 @@ h3{font-size:15px;margin-bottom:10px}
     <label>🏷 Nomi</label><input class="f" id="a-name">
     <label>💰 Narxi (so'm)</label><input class="f" id="a-price" type="number" inputmode="numeric">
     <label>#️⃣ Shtrix-kod (ixtiyoriy)</label><input class="f" id="a-sku">
+    <label>ℹ️ Tavsif — o'zbekcha (ixtiyoriy)</label><textarea class="f" id="a-info-uz" rows="2"></textarea>
+    <label>ℹ️ Tavsif — ruscha (ixtiyoriy)</label><textarea class="f" id="a-info-ru" rows="2"></textarea>
     <label>🖼 Rasm UZ (ixtiyoriy)</label><input class="f" id="a-file" type="file" accept="image/*">
     <label>🖼 Rasm RU (ixtiyoriy)</label><input class="f" id="a-file-ru" type="file" accept="image/*">
     <button class="btn p" id="a-btn" onclick="manQosh()">➕ Qo'shish</button>
@@ -206,6 +212,8 @@ function ochE(i){
   el('e-title').textContent = '✏️ ' + CUR.name;
   el('e-name').value = CUR.name;
   el('e-price').value = CUR.price;
+  el('e-info-uz').value = CUR.info_uz || '';
+  el('e-info-ru').value = CUR.info_ru || '';
   el('e-file').value = ''; el('e-file-ru').value = '';
   const pv = el('e-prev');
   if(CUR.photo){ pv.src = CUR.photo.startsWith('/')?API+CUR.photo:CUR.photo; pv.style.display='block'; }
@@ -224,6 +232,9 @@ async function saqla(){
     const narx = parseFloat(el('e-price').value);
     if(nom && nom !== CUR.name) body.name = nom;
     if(narx && narx !== CUR.price) body.price = narx;
+    const iu = el('e-info-uz').value.trim(), ir = el('e-info-ru').value.trim();
+    if(iu !== (CUR.info_uz||'')) body.info_uz = iu;
+    if(ir !== (CUR.info_ru||'')) body.info_ru = ir;
     const r = await api('/api/admin/save', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
     if(!r.ok) throw 0;
     const f = el('e-file').files[0];
@@ -246,7 +257,7 @@ async function saqla(){
 
 async function aslga(){
   if(!CUR) return;
-  if(!confirm('Barcha tahrirlar (nom/narx/rasm) o\'chib, asl holiga qaytadi. Davom etasizmi?')) return;
+  if(!confirm('Barcha tahrirlar (nom/narx/rasm/tavsif) o\'chib, asl holiga qaytadi. Davom etasizmi?')) return;
   try{
     await api('/api/admin/reset', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: CUR.id})});
     toast('↩️ Asl holiga qaytdi');
@@ -268,7 +279,16 @@ async function manQosh(){
       const pr = await api('/api/admin/photo', {method:'POST', body: fd});
       if(!pr.ok) toast('⚠️ Mahsulot qo\'shildi, lekin rasm yuklanmadi — 🗂 dan qayta uring');
     }
-    el('a-name').value=''; el('a-price').value=''; el('a-sku').value=''; el('a-file').value=''; el('a-file-ru').value='';
+    const fr = el('a-file-ru').files[0];
+    if(fr && r.id){
+      const fd2 = new FormData(); fd2.append('id', 'man'+r.id+'_ru'); fd2.append('file', fr, 'photo.jpg');
+      await api('/api/admin/photo', {method:'POST', body: fd2});
+    }
+    const iu = el('a-info-uz').value.trim(), ir = el('a-info-ru').value.trim();
+    if((iu || ir) && r.id){
+      await api('/api/admin/save', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id:'man'+r.id, info_uz:iu, info_ru:ir})});
+    }
+    el('a-name').value=''; el('a-price').value=''; el('a-sku').value=''; el('a-file').value=''; el('a-file-ru').value=''; el('a-info-uz').value=''; el('a-info-ru').value='';
     toast('✅ Qo\'shildi — katalogda!');
   }catch(e){ toast('⚠️ Xatolik'); }
   btn.disabled = false; btn.textContent = '➕ Qo\'shish';

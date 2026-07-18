@@ -109,6 +109,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .sheet .body{padding:14px 16px}
 .sheet h2{font-size:17px;line-height:1.3}
 .sheet .shbtn{flex:0 0 40px;width:40px;height:40px;border:none;border-radius:12px;background:var(--card2);color:var(--text);font-size:18px;cursor:pointer}
+.sheet .pinf{font-size:13.5px;line-height:1.55;background:var(--card2);border-radius:12px;padding:10px 12px;margin-bottom:14px}
 .sheet .price{font-size:20px;font-weight:800;color:var(--accent);margin:8px 0 2px}
 .sheet .meta{color:var(--hint);font-size:13px;margin-bottom:14px}
 .qtyrow{display:flex;align-items:center;gap:14px;margin:10px 0 16px}
@@ -341,6 +342,8 @@ function applyOverrides(){
     if(o.price) p.price = o.price;
     if(o.photo) p.photo = DATA.api_url + o.photo;
     if(o.photo_ru) p.photo_ru = DATA.api_url + o.photo_ru;
+    if(o.info_uz) p.info_uz = o.info_uz;
+    if(o.info_ru) p.info_ru = o.info_ru;
   };
   (DATA.products||[]).forEach(p=>{
     ap(p);
@@ -352,6 +355,8 @@ function applyOverrides(){
           if(o.price) v.price = o.price;
           if(o.photo) v.photo = DATA.api_url + o.photo;
           if(o.photo_ru) v.photo_ru = DATA.api_url + o.photo_ru;
+          if(o.info_uz && !p.info_uz) p.info_uz = o.info_uz;
+          if(o.info_ru && !p.info_ru) p.info_ru = o.info_ru;
         }
       });
       p.price = Math.min.apply(null, p.variants.map(v=>v.price));
@@ -459,6 +464,7 @@ function openProduct(id){
   mVarId = p.variants ? p.variants[0].id : null;
   const v0 = p.variants ? p.variants[0] : null;
   const ph0 = (v0&&fotoOf(v0)) || fotoOf(p);
+  const inf = (LANG==='ru' ? (p.info_ru||p.info_uz) : (p.info_uz||p.info_ru)) || '';
   el('psheet').innerHTML = `
     ${ph0?`<img class="big" id="mimg" src="${ph0}">`:`<img class="big" id="mimg" style="display:none">`}
     <div class="body">
@@ -469,6 +475,7 @@ function openProduct(id){
       ${p.variants?`<div style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px">${p.variants.map(v=>`<button class="vchip${v.id===mVarId?' sel':''}" id="vc-${v.id}" onclick="mSelVar('${v.id}')">${esc(v.label)}</button>`).join('')}</div>`:''}
       <div class="price" id="mprice">${p.old_price?`<span class="oldp" style="font-size:16px">${fmt(p.old_price)}</span> `:''}${fmt(v0?v0.price:p.price)}${p.disc?` <span class="discbadge" style="position:static;display:inline-block">-${p.disc}%</span>`:''}</div>
       <div class="meta">${t('mavjud')}${p.sku?(' · '+t('artikul')+': '+esc(p.sku)):''}</div>
+      ${inf?`<div class="pinf">${esc(inf).replace(/\n/g,'<br>')}</div>`:''}
       <div class="qtyrow">
         <button onclick="mAdj(-1)">−</button><input class="qv" id="mqv" type="number" inputmode="numeric" min="1" max="999" value="1" oninput="mSet(this.value)" onchange="mSync()"><button onclick="mAdj(1)">+</button>
       </div>
