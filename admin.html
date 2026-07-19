@@ -47,8 +47,10 @@ input.f:focus{border-color:var(--accent)}
 .tgl::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s}
 .tgl.on::after{left:23px}
 .prev{width:100%;max-height:200px;object-fit:contain;border-radius:12px;background:var(--card2);margin-top:8px}
-.gprev{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 8px}
+.gprev{display:flex;gap:12px;flex-wrap:wrap;margin:6px 0 8px;padding:8px 8px 12px}
 .gprev .gi{position:relative}
+.gprev .st{position:absolute;bottom:-8px;left:-8px;width:24px;height:24px;border-radius:50%;border:none;background:#3a3016;color:#ffd85e;font-size:12px;cursor:pointer;line-height:1}
+.gprev .bosh{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);font-size:8.5px;font-weight:800;background:var(--accent);color:var(--accent-text);padding:2px 7px;border-radius:6px;white-space:nowrap}
 .gprev img,.gprev .vb{width:64px;height:64px;object-fit:cover;border-radius:10px;background:var(--card2)}
 .gprev .vb{display:flex;align-items:center;justify-content:center;font-size:26px}
 .gprev .x{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;border:none;background:#5b2530;color:#ff9d9d;font-size:12px;cursor:pointer;line-height:1}
@@ -227,22 +229,42 @@ function ochE(i){
   ochT('tahrir');
 }
 
+let IMGV = Date.now();   // rasm keshini yangilash uchun
 function eGalRender(){
-  const abs = u => u && u.startsWith('/') ? API+u : u;
+  const abs = u => {
+    if(!u) return u;
+    const full = u.startsWith('/') ? API+u : u;
+    return full + (full.includes('?') ? '&' : '?') + 'v=' + IMGV;
+  };
   let h = '';
   if(CUR.photo){
     const x = CUR.photo.startsWith('/') ? `<button class="x" onclick="mediaDel('${CUR.id}')">✕</button>` : '';
-    h += `<div class="gi"><img src="${abs(CUR.photo)}">${x}</div>`;
+    h += `<div class="gi"><img src="${abs(CUR.photo)}"><span class="bosh">BOSH</span>${x}</div>`;
   }
   (CUR.gallery||[]).forEach(u=>{
     const gid = u.split('/').pop();
-    h += `<div class="gi"><img src="${abs(u)}"><button class="x" onclick="mediaDel('${gid}')">✕</button></div>`;
+    const m = gid.match(/_g([2-5])$/);
+    const st = m ? `<button class="st" title="Bosh rasm qilish" onclick="boshRasm(${m[1]})">⭐</button>` : '';
+    h += `<div class="gi"><img src="${abs(u)}">${st}<button class="x" onclick="mediaDel('${gid}')">✕</button></div>`;
   });
   el('e-gal').innerHTML = h || '<div style="font-size:12px;color:var(--hint)">Hozircha rasm yo\'q</div>';
   el('e-vidrow').innerHTML = CUR.video
     ? `<div class="gi"><div class="vb">🎬</div><button class="x" onclick="mediaDel('${CUR.id}_vid')">✕</button></div>`
     : '<div style="font-size:12px;color:var(--hint)">Video yo\'q</div>';
 }
+async function boshRasm(slot){
+  if(!CUR) return;
+  try{
+    const r = await api('/api/admin/main_photo', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({id: CUR.id, slot: slot})});
+    if(!r.ok) throw 0;
+    IMGV = Date.now();          // kesh yangilansin — yangi rasm darhol ko'rinsin
+    eGalRender();
+    toast('⭐ Bosh rasm o\'zgartirildi');
+  }catch(e){ toast('⚠️ Bosh rasm o\'zgartirilmadi'); }
+}
+
 async function mediaDel(mid){
   if(!confirm('Bu media o\'chirilsinmi?')) return;
   try{
