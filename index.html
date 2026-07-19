@@ -468,7 +468,7 @@ function renderGrid(){
     <div class="pcard">
       <div class="pimg" onclick="openProduct('${p.id}')">
         ${p.disc?`<span class="discbadge">-${p.disc}%</span>`:(p.variants?`<span class="discbadge" style="background:#8b5cf6">${p.variants.length} ${t('xil')}</span>`:'')}
-        ${fotoOf(p)?`<img src="${fotoOf(p)}" loading="lazy" onerror="this.outerHTML='<div class=noimg>📦</div>'">`:`<div class="noimg">📦</div>`}
+        ${fotoOf(p)?`<img src="${kichik(fotoOf(p),400)}" loading="lazy" onerror="this.outerHTML='<div class=noimg>📦</div>'">`:`<div class="noimg">📦</div>`}
         <button class="qadd" onclick="event.stopPropagation();quickAdd('${p.id}')">+</button>
       </div>
       <div class="pinfo" onclick="openProduct('${p.id}')">
