@@ -289,6 +289,12 @@ function fotoOf(p){
   if(!p) return '';
   return LANG === 'ru' ? (p.photo_ru || p.photo || '') : (p.photo || p.photo_ru || '');
 }
+/* Serverdagi rasmning YENGIL nusxasi (asl fayl 1-2 MB bo'lishi mumkin).
+   Katalogda 400px, kartochkada 900px — sahifa tez ochilsin. */
+function kichik(u, w){
+  if(!u || u.indexOf('/api/photo/') === -1) return u;
+  return u + (u.indexOf('?') === -1 ? '?' : '&') + 'w=' + w;
+}
 const el = id => document.getElementById(id);
 const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 function toast(m){ const t=el('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',1600); }
@@ -431,7 +437,7 @@ function renderShelves(){
       ${sh.items.map(p=>`
         <div class="news-card" onclick="openProduct('${p.id}')">
           <span class="nbadge ${BADGE_CLASS[sh.key]||''}">${p.disc?('-'+p.disc+'%'):esc(sh.badge)}</span>
-          ${fotoOf(p)?`<img src="${fotoOf(p)}" loading="lazy" onerror="this.style.display='none'">`:`<div style="width:130px;height:130px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:34px">📦</div>`}
+          ${fotoOf(p)?`<img src="${kichik(fotoOf(p),400)}" loading="lazy" onerror="this.style.display='none'">`:`<div style="width:130px;height:130px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:34px">📦</div>`}
           <div class="nname">${esc(p.name)}</div>
           <div class="nprice">${p.old_price?`<span class="oldp">${fmt(p.old_price)}</span>`:''}${fmt(p.price)}${p.variants?' <span style="font-weight:400;font-size:11px;color:var(--hint)">'+t('dan')+'</span>':''}</div>
         </div>`).join('')}
@@ -493,9 +499,9 @@ function openProduct(id){
   (p.gallery||[]).forEach(u=>slaydlar.push({u}));
   el('psheet').innerHTML = `
     ${slaydlar.length>1
-      ? `<div class="gal" id="mgal" onscroll="galDots()">${slaydlar.map(s=>`<img ${s.main?'id="mimg"':''} src="${s.u}">`).join('')}</div>
+      ? `<div class="gal" id="mgal" onscroll="galDots()">${slaydlar.map(s=>`<img ${s.main?'id="mimg"':''} src="${kichik(s.u,900)}">`).join('')}</div>
          <div class="gdots" id="mdots">${slaydlar.map((_,i)=>`<span class="${i?'':'on'}"></span>`).join('')}</div>`
-      : (ph0?`<img class="big" id="mimg" src="${ph0}">`:`<img class="big" id="mimg" style="display:none">`)}
+      : (ph0?`<img class="big" id="mimg" src="${kichik(ph0,900)}">`:`<img class="big" id="mimg" style="display:none">`)}
     <div class="body">
       <div style="display:flex;gap:10px;align-items:flex-start">
         <h2 style="flex:1">${esc(p.name)}</h2>
@@ -529,7 +535,7 @@ function mSelVar(id){
   const v=p.variants.find(x=>x.id===id); if(!v) return;
   el('mprice').innerHTML = fmt(v.price);
   const im=el('mimg'); const ph=fotoOf(v)||fotoOf(p);
-  if(im){ if(ph){ im.src=ph; im.style.display=''; } else { im.style.display='none'; } }
+  if(im){ if(ph){ im.src=kichik(ph,900); im.style.display=''; } else { im.style.display='none'; } }
 }
 function mAddGo(){
   mSync();
@@ -630,7 +636,7 @@ function renderCart(){
     <div class="cartlist">
       ${items.map(c=>`
         <div class="ci">
-          ${c.photo?`<img src="${c.photo}">`:`<div style="width:54px;height:54px;border-radius:10px;background:var(--card2);display:flex;align-items:center;justify-content:center">📦</div>`}
+          ${c.photo?`<img src="${kichik(c.photo,200)}">`:`<div style="width:54px;height:54px;border-radius:10px;background:var(--card2);display:flex;align-items:center;justify-content:center">📦</div>`}
           <div class="nm">${esc(c.name)}<br><b>${fmt(c.price*c.qty)}</b></div>
           <div class="ctr"><button onclick="cAdj('${c.id}',-1)">−</button><input class="cq" type="number" inputmode="numeric" min="1" max="999" value="${c.qty}" onchange="cSet('${c.id}',this.value)"><button onclick="cAdj('${c.id}',1)">+</button></div>
         </div>`).join('')}
