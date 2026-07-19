@@ -354,6 +354,10 @@ function applyOverrides(){
     if(o.info_ru) p.info_ru = o.info_ru;
     if(o.gallery) p.gallery = o.gallery.map(u=>DATA.api_url+u);
     if(o.video) p.video = DATA.api_url + o.video;
+    if(o.old_price && o.old_price > p.price){
+      p.old_price = o.old_price;
+      p.disc = Math.round((o.old_price - p.price) / o.old_price * 100);
+    }
   };
   (DATA.products||[]).forEach(p=>{
     ap(p);
@@ -438,11 +442,17 @@ function renderCats(){
   el('cats').innerHTML=cats.map(c=>`<div class="cattile ${activeCat===c.id?'active':''}" onclick="setCat('${c.id}')"><span class="cnm">${esc(c.name)}</span>${c.count?`<span class="cnt">${c.count} ${t('ta')}</span>`:''}</div>`).join('');
 }
 function setCat(id){ activeCat=id; renderCats(); renderGrid(); }
+function rasmliOldin(list){
+  // Rasmi bor mahsulotlar oldinda (tartibni buzmasdan — barqaror saralash)
+  const bor = [], yoq = [];
+  for(const p of list){ (fotoOf(p) ? bor : yoq).push(p); }
+  return bor.concat(yoq);
+}
 function filtered(){
   let list = DATA.products || [];
-  if(query){ const q=query.toLowerCase(); return list.filter(p=>p.name.toLowerCase().includes(q)||(p.sku||'').toLowerCase().includes(q)); }
+  if(query){ const q=query.toLowerCase(); return rasmliOldin(list.filter(p=>p.name.toLowerCase().includes(q)||(p.sku||'').toLowerCase().includes(q))); }
   if(activeCat) list = list.filter(p=>p.cat===activeCat);
-  return list;
+  return rasmliOldin(list);
 }
 function renderGrid(){
   const list = filtered();

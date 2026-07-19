@@ -87,6 +87,11 @@ h3{font-size:15px;margin-bottom:10px}
     <input class="f" id="e-name">
     <label>💰 Narxi (so'm)</label>
     <input class="f" id="e-price" type="number" inputmode="numeric">
+    <label>🏷 Chegirmadan oldingi narx (0 = chegirma yo'q)</label>
+    <input class="f" id="e-oldprice" type="number" inputmode="numeric" placeholder="masalan 120000">
+    <div style="font-size:11.5px;color:var(--hint);margin-top:5px">
+      Hozirgi narxdan <b>katta</b> son yozilsa, mijozga chizilgan eski narx va qizil chegirma foizi ko'rinadi.
+    </div>
     <label>ℹ️ Tavsif — o'zbekcha (kartochkada ko'rinadi)</label>
     <textarea class="f" id="e-info-uz" rows="3" placeholder="Masalan: 6 kishilik chinni serviz, sovg'a qutisida"></textarea>
     <label>ℹ️ Tavsif — ruscha</label>
@@ -222,6 +227,7 @@ function ochE(i){
   el('e-price').value = CUR.price;
   el('e-info-uz').value = CUR.info_uz || '';
   el('e-info-ru').value = CUR.info_ru || '';
+  el('e-oldprice').value = CUR.old_price || '';
   el('e-file').value = ''; el('e-vfile').value = '';
   eGalRender();
   el('e-arx').classList.toggle('on', !!CUR.archived);
@@ -285,6 +291,8 @@ async function saqla(){
     const narx = parseFloat(el('e-price').value);
     if(nom && nom !== CUR.name) body.name = nom;
     if(narx && narx !== CUR.price) body.price = narx;
+    const eski = parseFloat(el('e-oldprice').value) || 0;
+    if(eski !== (CUR.old_price || 0)) body.old_price = eski;
     const iu = el('e-info-uz').value.trim(), ir = el('e-info-ru').value.trim();
     if(iu !== (CUR.info_uz||'')) body.info_uz = iu;
     if(ir !== (CUR.info_ru||'')) body.info_ru = ir;
