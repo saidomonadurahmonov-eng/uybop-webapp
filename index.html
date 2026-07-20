@@ -36,6 +36,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .lbtn{padding:6px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#cdd8ea;font-size:12.5px;font-weight:700;cursor:pointer}
 .lbtn.on{background:#F7941D;border-color:#F7941D;color:#132A52}
 .brandbar .search{margin:12px 0 0}
+.chanbtn{width:100%;margin-top:10px;border:none;border-radius:12px;padding:11px 14px;
+  background:#F7941D;color:#132A52;font-size:13.5px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px}
+.chanbtn:active{transform:scale(.98)}
 .brandbar .search input{background:#fff;color:#1a1a1a}
 .section-title{font-size:17px;font-weight:700;margin:18px 16px 10px;color:var(--text);letter-spacing:-.2px}
 .news{display:flex;gap:10px;overflow-x:auto;padding:2px 16px 6px;scrollbar-width:none}
@@ -144,6 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <div><div class="bname" id="shopName" style="font-size:22px;font-weight:800;letter-spacing:.5px">UY<span style="color:#F7941D">BOP</span></div><div class="bsub">Maishiy texnika · Qo'qon</div></div><div style="margin-left:auto;display:flex;gap:6px"><button class="lbtn" id="lb-uz" onclick="setLang('uz')">UZ</button><button class="lbtn" id="lb-ru" onclick="setLang('ru')">RU</button></div>
     </div>
     <div class="search"><input id="q" type="search" placeholder="Mahsulot yoki artikul..."></div>
+    <button class="chanbtn" id="chanBtn" onclick="kanalOch()">📢 Telegram kanalimiz — yangiliklar va aksiyalar</button>
   </div>
   <div class="sub" id="updated" style="padding:6px 16px 0;color:var(--hint);font-size:11px"></div>
   <div id="shelves"></div>
@@ -241,6 +246,7 @@ const loaded = {history:false, balance:false, profile:false};
 let LANG = localStorage.getItem('uybop_lang') || 'uz';
 const T = {
   uz: {
+    kanal:"📢 Telegram kanalimiz — yangiliklar va aksiyalar",
     som:"so'm", qidiruv:"Mahsulot yoki artikul...", yangi:"🆕 Yangi kelganlar",
     kategoriyalar:"Kategoriyalar", hammasi:"Hammasi", barcha:"Barcha mahsulotlar",
     natija:"Qidiruv natijasi", topilmadi:"Hech narsa topilmadi 😕", dan:"dan",
@@ -262,6 +268,7 @@ const T = {
     reg_btn:"📱 Ro'yxatdan o'tish",
   },
   ru: {
+    kanal:"📢 Наш Telegram-канал — новинки и акции",
     som:"сум", qidiruv:"Товар или артикул...", yangi:"🆕 Новинки",
     kategoriyalar:"Категории", hammasi:"Все", barcha:"Все товары",
     natija:"Результаты поиска", topilmadi:"Ничего не найдено 😕", dan:"и выше",
@@ -291,6 +298,11 @@ function fotoOf(p){
 }
 /* Serverdagi rasmning YENGIL nusxasi (asl fayl 1-2 MB bo'lishi mumkin).
    Katalogda 400px, kartochkada 900px — sahifa tez ochilsin. */
+function kanalOch(){
+  const u = 'https://t.me/uybopuz';
+  if (tg && tg.openTelegramLink) tg.openTelegramLink(u);   // Telegram ichida ochiladi
+  else window.open(u, '_blank');
+}
 function kichik(u, w){
   if(!u || u.indexOf('/api/photo/') === -1) return u;
   return u + (u.indexOf('?') === -1 ? '?' : '&') + 'w=' + w;
@@ -797,6 +809,7 @@ function setLang(l){
 }
 function applyLang(){
   const q0 = el('q'); if(q0) q0.placeholder = t('qidiruv');
+  const cb = el('chanBtn'); if(cb) cb.textContent = t('kanal');
   const ct = el('catTitle'); if(ct) ct.textContent = t('kategoriyalar');
   const gt = el('gridTitle'); if(gt) gt.textContent = query ? t('natija') : t('barcha');
   const em = el('empty'); if(em && em.style.display==='none') em.innerHTML = t('topilmadi');
