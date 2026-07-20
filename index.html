@@ -643,7 +643,7 @@ async function aniqlaQoqon(){
 function renderCart(){
   const items = Object.values(cart);
   if(!items.length){ el('cartBody').innerHTML='<div class="empty">'+t('bosh')+'</div>'; return; }
-  const t = cartTotal(); const o = optom(t);
+  const jami = cartTotal(); const o = optom(jami);   // DIQQAT: `t` tarjima funksiyasi — bosib bo'lmaydi
   el('cartBody').innerHTML = `
     <div class="cartlist">
       ${items.map(c=>`
@@ -654,11 +654,11 @@ function renderCart(){
         </div>`).join('')}
     </div>
     <div class="cartbox">
-      <div class="total"><span>${t('jami')}</span><span>${fmt(t)}</span></div>
+      <div class="total"><span>${t('jami')}</span><span>${fmt(jami)}</span></div>
       ${o.is
         ? `<div class="discount"><span>🏷 Optom chegirma (${OPTOM_PCT()}%):</span><span>−${fmt(o.d)}</span></div>
            <div class="total"><span>💳 To'lanadigan:</span><span>${fmt(o.pay)}</span></div>`
-        : (OPTOM_PCT()>0 ? `<div class="note" style="background:rgba(255,149,0,.12);padding:8px 10px;border-radius:10px;margin:6px 0">🏷 Optomgacha yana <b>${fmt(OPTOM_MIN()-t)}</b> qoldi — ${OPTOM_PCT()}% chegirma!</div>` : '')}
+        : (OPTOM_PCT()>0 ? `<div class="note" style="background:rgba(255,149,0,.12);padding:8px 10px;border-radius:10px;margin:6px 0">🏷 Optomgacha yana <b>${fmt(OPTOM_MIN()-jami)}</b> qoldi — ${OPTOM_PCT()}% chegirma!</div>` : '')}
       <div class="note" style="margin:10px 0 2px;font-weight:700;color:var(--text)">${t('yetkazish')}</div>
       <div id="dopts">${delivOptsHtml()}</div>
       <button class="bigbtn" onclick="checkout()">${t('buyurtma')}</button>
