@@ -132,6 +132,13 @@ h3{font-size:15px;margin-bottom:10px}
 
 <div class="view" id="v-buyurtma"><div id="olist"><div class="empty">Yuklanmoqda...</div></div></div>
 
+<div class="view" id="v-mijoz">
+  <div class="search"><input id="mq" type="search" placeholder="Ism yoki telefon..."></div>
+  <div id="mstat" class="stat" style="margin-bottom:12px"></div>
+  <div id="mlist"><div class="empty">Yuklanmoqda...</div></div>
+  <button class="btn g" onclick="mijozCsv()">⬇️ Excel (CSV) yuklab olish</button>
+</div>
+
 <div class="view" id="v-stat">
   <div class="stat" id="scards"></div>
 </div>
@@ -163,6 +170,7 @@ const TABS = [
   {id:'katalog', i:'🗂', t:'Katalog', rol:'katalog'},
   {id:'qoshish', i:'➕', t:"Qo'shish", rol:'katalog'},
   {id:'buyurtma', i:'🧾', t:'Buyurtma', rol:'buyurtma'},
+  {id:'mijoz', i:'👥', t:'Mijozlar', rol:'osish'},
   {id:'stat', i:'📊', t:'Statistika', rol:'osish'},
 ];
 
@@ -374,6 +382,41 @@ async function manOchir(){
 }
 
 /* ---------- BUYURTMA / STAT ---------- */
+/* ---------- MIJOZLAR ---------- */
+let _mqt = null;
+el('mq') && el('mq').addEventListener('input', e=>{
+  clearTimeout(_mqt); _mqt = setTimeout(()=>yukleMijoz(e.target.value.trim()), 350);
+});
+const som = n => new Intl.NumberFormat('uz-UZ').format(Math.round(n||0));
+
+async function yukleMijoz(q){
+  try{
+    const d = await api('/api/admin/customers' + (q ? '?q='+encodeURIComponent(q) : ''));
+    const m = d.mijozlar || [];
+    el('mstat').innerHTML =
+      `<div class="s"><div class="v">${d.jami||0}</div><div class="l">Mijoz</div></div>` +
+      `<div class="s"><div class="v">${som(d.summa)}</div><div class="l">Jami xarid (so'm)</div></div>`;
+    if(!m.length){ el('mlist').innerHTML = '<div class="empty">Mijoz topilmadi</div>'; return; }
+    el('mlist').innerHTML = m.map(x=>`
+      <div class="ord">
+        <div class="h"><span>${esc(x.ism || 'Ismsiz')}</span><span class="s2">${som(x.summa)} so'm</span></div>
+        <div class="m">📱 <a href="tel:+${esc(x.telefon)}" style="color:var(--accent)">+${esc(x.telefon)}</a>${x.hudud?' · 📍 '+esc(x.hudud):''}
+🧾 ${x.buyurtma} ta buyurtma${x.oxirgi?' · oxirgi: '+esc(x.oxirgi):''}
+🗓 Ro'yxatdan: ${esc(x.royxat)}</div>
+      </div>`).join('');
+  }catch(e){ el('mlist').innerHTML = '<div class="empty">Yuklab bo\'lmadi</div>'; }
+}
+
+async function mijozCsv(){
+  const q = el('mq') ? el('mq').value.trim() : '';
+  try{
+    toast('⏳ Fayl tayyorlanmoqda...');
+    const r = await api('/api/admin/customers_csv', {method:'POST',
+      headers:{'Content-Type':'application/json'}, body: JSON.stringify({q})});
+    toast(r.ok ? '✅ Fayl botga yuborildi — chatni oching' : '⚠️ Yuborilmadi');
+  }catch(e){ toast('⚠️ Xatolik'); }
+}
+
 async function yukleOrders(){
   try{
     const d = await api('/api/admin/orders');
