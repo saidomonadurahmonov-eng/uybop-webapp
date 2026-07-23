@@ -331,6 +331,7 @@ async function load(){
     await loadOverrides();
     applyHidden();
     applyOverrides();
+    kategoriyalarniQur();
     renderShop();
     loadManual();
   }catch(e){
@@ -377,6 +378,7 @@ function applyOverrides(){
       p.old_price = o.old_price;
       p.disc = Math.round((o.old_price - p.price) / o.old_price * 100);
     }
+    if(o.category) p.cat = o.category;   // guruhdan belgilangan kategoriya
   };
   (DATA.products||[]).forEach(p=>{
     ap(p);
@@ -428,6 +430,7 @@ async function loadManual(){
     if(d.products && d.products.length){
       DATA.products = (DATA.products||[]).concat(d.products.filter(p=>!HIDDEN.has(p.id)));
       applyOverrides();
+      kategoriyalarniQur();
       renderCats(); renderGrid();
     }
   }catch(e){}
@@ -438,6 +441,19 @@ function gateMsg(html){
 }
 
 /* ---------- DO'KON ---------- */
+function kategoriyalarniQur(){
+  // Mahsulotlardagi `cat` qiymatlaridan kategoriya ro'yxatini quramiz (soni bilan).
+  const sanoq = {};
+  (DATA.products||[]).forEach(p=>{
+    const c = (p.cat||'').trim();
+    if(c && c !== '__other__') sanoq[c] = (sanoq[c]||0) + 1;
+  });
+  DATA.categories = Object.keys(sanoq)
+    .sort((a,b)=> sanoq[b]-sanoq[a] || a.localeCompare(b))
+    .map(c=>({id:c, name:c, count:sanoq[c]}));
+  // Faol kategoriya endi mavjud bo'lmasa — tozalaymiz
+  if(activeCat && !sanoq[activeCat]) activeCat='';
+}
 function renderShop(){ renderShelves(); renderCats(); renderGrid(); }
 const BADGE_CLASS = {discount:'disc', top:'top', new:''};
 function renderShelves(){
