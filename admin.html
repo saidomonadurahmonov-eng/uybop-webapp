@@ -33,7 +33,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .empty{text-align:center;color:var(--hint);padding:36px 16px;font-size:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
 label{display:block;font-size:11.5px;color:var(--hint);margin:12px 0 5px;font-weight:600;letter-spacing:.3px}
-input.f,textarea.f{width:100%;border:1px solid var(--line);border-radius:11px;padding:12px 13px;font-size:15px;background:var(--card2);color:var(--text);outline:none}
+input.f,textarea.f,select.f{width:100%;border:1px solid var(--line);border-radius:11px;padding:12px 13px;font-size:15px;background:var(--card2);color:var(--text);outline:none}
+select.f{appearance:none;-webkit-appearance:none}
 input.f:focus{border-color:var(--accent)}
 .btn{width:100%;border:none;border-radius:12px;padding:14px;font-size:15.5px;font-weight:700;cursor:pointer;margin-top:12px}
 .btn.p{background:var(--accent);color:var(--accent-text)}
@@ -87,6 +88,11 @@ h3{font-size:15px;margin-bottom:10px}
     <input class="f" id="e-name">
     <label>💰 Narxi (so'm)</label>
     <input class="f" id="e-price" type="number" inputmode="numeric">
+    <label>🗂 Kategoriya</label>
+    <select class="f" id="e-cat"></select>
+    <div style="font-size:11.5px;color:var(--hint);margin-top:5px">
+      Faqat mavjud kategoriyalardan tanlanadi. Yangi kategoriya guruhga <b>= nomi</b> yozib qo'shiladi.
+    </div>
     <label>🏷 Chegirmadan oldingi narx (0 = chegirma yo'q)</label>
     <input class="f" id="e-oldprice" type="number" inputmode="numeric" placeholder="masalan 120000">
     <div style="font-size:11.5px;color:var(--hint);margin-top:5px">
@@ -205,7 +211,22 @@ async function boshla(){
   const tabs = TABS.filter(t=>ROLES.includes(t.rol));
   el('tabs').innerHTML = tabs.map(t=>`<button data-t="${t.id}" onclick="ochT('${t.id}')"><span class="i">${t.i}</span>${t.t}</button>`).join('');
   if(tabs.length){ ochT(tabs[0].id); }
-  if(ROLES.includes('katalog')) qidir('');
+  if(ROLES.includes('katalog')){ qidir(''); yukleKategoriyalar(); }
+}
+
+let CATS = [];
+async function yukleKategoriyalar(){
+  try{ const d = await api('/api/admin/categories'); CATS = d.categories || []; }
+  catch(e){ CATS = []; }
+}
+function catSelectToldir(joriy){
+  const sel = el('e-cat'); if(!sel) return;
+  let opts = '<option value="">— kategoriyasiz —</option>';
+  const bor = CATS.slice();
+  if(joriy && !bor.includes(joriy)) bor.push(joriy);   // joriy qiymat ro'yxatда bo'lmasa ham ko'rinsin
+  opts += bor.map(c=>`<option value="${esc(c)}"${c===joriy?' selected':''}>${esc(c)}</option>`).join('');
+  sel.innerHTML = opts;
+  sel.value = joriy || '';
 }
 
 /* ---------- KATALOG ---------- */
@@ -236,6 +257,7 @@ function ochE(i){
   el('e-info-uz').value = CUR.info_uz || '';
   el('e-info-ru').value = CUR.info_ru || '';
   el('e-oldprice').value = CUR.old_price || '';
+  catSelectToldir(CUR.category || '');
   el('e-file').value = ''; el('e-vfile').value = '';
   eGalRender();
   el('e-arx').classList.toggle('on', !!CUR.archived);
@@ -304,6 +326,8 @@ async function saqla(){
     const iu = el('e-info-uz').value.trim(), ir = el('e-info-ru').value.trim();
     if(iu !== (CUR.info_uz||'')) body.info_uz = iu;
     if(ir !== (CUR.info_ru||'')) body.info_ru = ir;
+    const kat = (el('e-cat').value||'');
+    if(kat !== (CUR.category||'')) body.category = kat;
     const r = await api('/api/admin/save', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
     if(!r.ok) throw 0;
     const files = Array.from(el('e-file').files).slice(0,5);
