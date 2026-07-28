@@ -846,7 +846,12 @@ async function loadProfile(){
       </div>
       <div class="note">ℹ️ Ma'lumotlarni o'zgartirish uchun do'konga murojaat qiling.</div>
       ${OPTOM_PCT()>0?`<div class="panel"><div class="row"><span class="k">🏷 Optom</span><span class="v">${fmt(OPTOM_MIN())} dan ${OPTOM_PCT()}% chegirma</span></div></div>`:''}`;
-  }catch(e){ el('profBody').innerHTML = (e.message==='no-auth') ? PHONE_NOTE : '<div class="empty">Ma\'lumotni yuklab bo\'lmadi.</div>'; }
+  }catch(e){
+    // Kirmagan bo'lsa ham Tarix havolasi ko'rinsin (bosilganda kirish so'raladi)
+    const tl = `<div class="catlist" style="padding:0 0 4px"><div class="catrow" onclick="switchView('history')"><span class="cicon">🧾</span><span class="cname">${t('tarix_link')}</span><span class="ccount">›</span></div></div>`;
+    const xato = (e.message==='no-auth') ? PHONE_NOTE : '<div class="empty">Ma\'lumotni yuklab bo\'lmadi.</div>';
+    el('profBody').innerHTML = tl + xato;
+  }
 }
 
 /* ---------- navigatsiya ---------- */
