@@ -60,6 +60,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .cattile .cnm{font-size:13px;font-weight:500;color:var(--text)}
 .cattile .cnt{font-size:11px;color:var(--hint)}
 .cattile.active .cnm,.cattile.active .cnt{color:var(--accent-text)}
+/* Bo'limlar sahifasi */
+.catlist{padding:8px 16px 20px}
+.catrow{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);
+  border-radius:14px;padding:15px 16px;margin-bottom:10px;cursor:pointer}
+.catrow:active{transform:scale(.99)}
+.catrow .cicon{font-size:22px;flex:0 0 auto}
+.catrow .cname{flex:1;font-size:15px;font-weight:600;color:var(--text)}
+.catrow .ccount{font-size:13px;font-weight:700;color:var(--accent);background:rgba(239,93,168,.12);
+  padding:4px 10px;border-radius:9px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 16px 18px}
 .pcard{background:var(--card);border-radius:18px;overflow:hidden;border:1px solid var(--line);display:flex;flex-direction:column}
 .pimg{position:relative}
@@ -152,7 +161,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
   <div class="sub" id="updated" style="padding:6px 16px 0;color:var(--hint);font-size:11px"></div>
   <div id="shelves"></div>
-  <div class="section-title" id="catTitle">Kategoriyalar</div>
   <div class="cats" id="cats"></div>
   <div class="section-title" id="gridTitle">Barcha mahsulotlar</div>
   <div class="grid" id="grid"></div>
@@ -183,11 +191,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div id="profBody"><div class="spin">Yuklanmoqda...</div></div>
 </div>
 
+<!-- KATEGORIYALAR (alohida bo'lim) -->
+<div class="view" id="v-cats">
+  <div class="header"><h1 id="catsH1">🗂 Bo'limlar</h1></div>
+  <div id="catsBody"></div>
+</div>
+
 <!-- pastki menyu -->
 <div class="nav" id="nav">
   <button data-v="shop" class="active"><span class="ic">🛍</span>Do'kon</button>
+  <button data-v="cats"><span class="ic">🗂</span>Bo'limlar</button>
   <button data-v="cart"><span class="ic">🛒</span>Savat<span class="badge" id="navBadge" style="display:none">0</span></button>
-  <button data-v="history"><span class="ic">🧾</span>Tarix</button>
   <button data-v="balance"><span class="ic">💰</span>Balans</button>
   <button data-v="profile"><span class="ic">👤</span>Kabinet</button>
 </div>
@@ -247,6 +261,8 @@ let LANG = localStorage.getItem('uybop_lang') || 'uz';
 const T = {
   uz: {
     kanal:"📢 Telegram kanalimiz — yangiliklar va aksiyalar",
+    nav_cats:"Bo'limlar", kat_h:"🗂 Bo'limlar",
+    kat_yoq:"Hozircha bo'limlar yo'q 🗂", tarix_link:"🧾 Xaridlar tarixi",
     som:"so'm", qidiruv:"Mahsulot yoki artikul...", yangi:"🆕 Yangi kelganlar",
     kategoriyalar:"Kategoriyalar", hammasi:"Hammasi", barcha:"Barcha mahsulotlar",
     natija:"Qidiruv natijasi", topilmadi:"Hech narsa topilmadi 😕", dan:"dan",
@@ -269,6 +285,8 @@ const T = {
   },
   ru: {
     kanal:"📢 Наш Telegram-канал — новинки и акции",
+    nav_cats:"Разделы", kat_h:"🗂 Разделы",
+    kat_yoq:"Пока разделов нет 🗂", tarix_link:"🧾 История покупок",
     som:"сум", qidiruv:"Товар или артикул...", yangi:"🆕 Новинки",
     kategoriyalar:"Категории", hammasi:"Все", barcha:"Все товары",
     natija:"Результаты поиска", topilmadi:"Ничего не найдено 😕", dan:"и выше",
@@ -477,6 +495,39 @@ function renderCats(){
   el('cats').innerHTML=cats.map(c=>`<div class="cattile ${activeCat===c.id?'active':''}" onclick="setCat('${c.id}')"><span class="cnm">${esc(c.name)}</span>${c.count?`<span class="cnt">${c.count} ${t('ta')}</span>`:''}</div>`).join('');
 }
 function setCat(id){ activeCat=id; renderCats(); renderGrid(); }
+
+/* Bo'limlar sahifasi — sodda, katta tugmalar */
+function renderCatsPage(){
+  const body = el('catsBody'); if(!body) return;
+  const cats = DATA.categories || [];
+  if(!cats.length){
+    body.innerHTML = `<div class="empty">${t('kat_yoq')}</div>`;
+    return;
+  }
+  const jami = (DATA.products||[]).length;
+  body.innerHTML =
+    `<div class="catlist">
+       <div class="catrow" onclick="catOch('')">
+         <span class="cicon">🛍</span>
+         <span class="cname">${t('hammasi')}</span>
+         <span class="ccount">${jami}</span>
+       </div>` +
+    cats.map(c=>`
+       <div class="catrow" onclick="catOch('${esc(c.id).replace(/'/g,"\\'")}')">
+         <span class="cicon">📦</span>
+         <span class="cname">${esc(c.name)}</span>
+         <span class="ccount">${c.count}</span>
+       </div>`).join('') +
+    `</div>`;
+}
+function catOch(id){
+  activeCat = id;
+  switchView('shop');
+  renderCats(); renderGrid();
+  const gt = el('gridTitle');
+  if(gt) gt.textContent = id || t('barcha');
+  window.scrollTo(0,0);
+}
 function rasmliOldin(list){
   // Rasmi bor mahsulotlar oldinda (tartibni buzmasdan — barqaror saralash)
   const bor = [], yoq = [];
@@ -786,6 +837,13 @@ async function loadProfile(){
         <div class="row"><span class="k">Telefon</span><span class="v">+${esc(d.phone||'')}</span></div>
         <div class="row"><span class="k">Hudud</span><span class="v">${esc(loc)}</span></div>
       </div>
+      <div class="catlist" style="padding:0 0 4px">
+        <div class="catrow" onclick="switchView('history')">
+          <span class="cicon">🧾</span>
+          <span class="cname">${t('tarix_link')}</span>
+          <span class="ccount">›</span>
+        </div>
+      </div>
       <div class="note">ℹ️ Ma'lumotlarni o'zgartirish uchun do'konga murojaat qiling.</div>
       ${OPTOM_PCT()>0?`<div class="panel"><div class="row"><span class="k">🏷 Optom</span><span class="v">${fmt(OPTOM_MIN())} dan ${OPTOM_PCT()}% chegirma</span></div></div>`:''}`;
   }catch(e){ el('profBody').innerHTML = (e.message==='no-auth') ? PHONE_NOTE : '<div class="empty">Ma\'lumotni yuklab bo\'lmadi.</div>'; }
@@ -799,6 +857,7 @@ function switchView(v){
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active', b.dataset.v===v));
   window.scrollTo(0,0);
   if(v==='cart') renderCart();
+  if(v==='cats') renderCatsPage();
   if(v==='history'){ if(!loaded.history){loaded.history=true; loadHistory();} }
   if(v==='balance'){ if(!loaded.balance){loaded.balance=true; loadBalance();} }
   if(v==='profile'){ if(!loaded.profile){loaded.profile=true; loadProfile();} }
@@ -810,7 +869,7 @@ el('q').addEventListener('input', e=>{
   const sr=!!query;
   el('shelves').style.display=sr?'none':'';
   el('cats').style.display=sr?'none':'';
-  el('catTitle').style.display=sr?'none':'';
+  const _ct = el('catTitle'); if(_ct) _ct.style.display=sr?'none':'';
   el('gridTitle').textContent=sr?t('natija'):t('barcha');
   renderGrid();
 });
@@ -830,10 +889,10 @@ function applyLang(){
   const gt = el('gridTitle'); if(gt) gt.textContent = query ? t('natija') : t('barcha');
   const em = el('empty'); if(em && em.style.display==='none') em.innerHTML = t('topilmadi');
   const h = (sel, k) => { const e = document.querySelector(sel); if(e) e.textContent = t(k); };
-  h('#v-cart h1','savat_h'); h('#v-history h1','tarix_h');
+  h('#v-cart h1','savat_h'); h('#v-history h1','tarix_h'); h('#catsH1','kat_h');
   h('#v-balance h1','balans_h'); h('#v-profile h1','kabinet_h');
-  const ikon = {shop:'🛍', cart:'🛒', history:'🧾', balance:'💰', profile:'👤'};
-  const lab = {shop:t('nav_shop'), cart:t('nav_cart'), history:t('nav_hist'), balance:t('nav_bal'), profile:t('nav_prof')};
+  const ikon = {shop:'🛍', cats:'🗂', cart:'🛒', history:'🧾', balance:'💰', profile:'👤'};
+  const lab = {shop:t('nav_shop'), cats:t('nav_cats'), cart:t('nav_cart'), history:t('nav_hist'), balance:t('nav_bal'), profile:t('nav_prof')};
   document.querySelectorAll('#nav button').forEach(b=>{
     const v = b.dataset.v;
     const badge = v==='cart' ? '<span class="badge" id="navBadge" style="display:none">0</span>' : '';
