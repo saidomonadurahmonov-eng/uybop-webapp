@@ -178,7 +178,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
   <div class="sub" id="updated" style="padding:6px 16px 0;color:var(--hint);font-size:11px"></div>
   <div id="shelves"></div>
-  <div class="cats" id="cats"></div>
   <div class="section-title" id="gridTitle">Barcha mahsulotlar</div>
   <div class="grid" id="grid"></div>
   <div class="empty" id="empty" style="display:none">Hech narsa topilmadi 😕</div>
@@ -210,14 +209,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 <!-- KATEGORIYALAR (alohida bo'lim) -->
 <div class="view" id="v-cats">
-  <div class="header"><h1 id="catsH1">🗂 Bo'limlar</h1></div>
+  <div class="header"><h1 id="catsH1">🗂 Kategoriyalar</h1></div>
   <div id="catsBody"></div>
 </div>
 
 <!-- pastki menyu -->
 <div class="nav" id="nav">
   <button data-v="shop" class="active"><span class="ic">🛍</span>Do'kon</button>
-  <button data-v="cats"><span class="ic">🗂</span>Bo'limlar</button>
+  <button data-v="cats"><span class="ic">🗂</span>Kategoriya</button>
   <button data-v="cart"><span class="ic">🛒</span>Savat<span class="badge" id="navBadge" style="display:none">0</span></button>
   <button data-v="balance"><span class="ic">💰</span>Balans</button>
   <button data-v="profile"><span class="ic">👤</span>Kabinet</button>
@@ -278,8 +277,8 @@ let LANG = localStorage.getItem('uybop_lang') || 'uz';
 const T = {
   uz: {
     kanal:"📢 Telegram kanalimiz — yangiliklar va aksiyalar",
-    nav_cats:"Bo'limlar", kat_h:"🗂 Bo'limlar",
-    kat_yoq:"Hozircha bo'limlar yo'q 🗂", tarix_link:"Xaridlar tarixi",
+    nav_cats:"Kategoriya", kat_h:"🗂 Kategoriyalar",
+    kat_yoq:"Hozircha kategoriyalar yo'q 🗂", tarix_link:"Xaridlar tarixi",
     som:"so'm", qidiruv:"Mahsulot yoki artikul...", yangi:"🆕 Yangi kelganlar",
     kategoriyalar:"Kategoriyalar", hammasi:"Hammasi", barcha:"Barcha mahsulotlar",
     natija:"Qidiruv natijasi", topilmadi:"Hech narsa topilmadi 😕", dan:"dan",
@@ -302,8 +301,8 @@ const T = {
   },
   ru: {
     kanal:"📢 Наш Telegram-канал — новинки и акции",
-    nav_cats:"Разделы", kat_h:"🗂 Разделы",
-    kat_yoq:"Пока разделов нет 🗂", tarix_link:"История покупок",
+    nav_cats:"Категории", kat_h:"🗂 Категории",
+    kat_yoq:"Пока категорий нет 🗂", tarix_link:"История покупок",
     som:"сум", qidiruv:"Товар или артикул...", yangi:"🆕 Новинки",
     kategoriyalar:"Категории", hammasi:"Все", barcha:"Все товары",
     natija:"Результаты поиска", topilmadi:"Ничего не найдено 😕", dan:"и выше",
@@ -471,7 +470,7 @@ async function loadManual(){
   }catch(e){}
 }
 function gateMsg(html){
-  el('shelves').innerHTML=''; el('grid').innerHTML=''; el('cats').innerHTML='';
+  el('shelves').innerHTML=''; el('grid').innerHTML=''; const _c=el('cats'); if(_c) _c.innerHTML='';
   el('empty').style.display='block'; el('empty').innerHTML=html;
 }
 
@@ -507,9 +506,11 @@ function renderShelves(){
     </div>`).join('');
 }
 function renderCats(){
+  // Do'kon sahifasidagi eski lenta olib tashlangan — element bo'lmasa jim o'tamiz.
+  const box = el('cats'); if(!box) return;
   const total=(DATA.products||[]).length;
   const cats=[{id:'',name:t('hammasi'),count:total}].concat(DATA.categories||[]);
-  el('cats').innerHTML=cats.map(c=>`<div class="cattile ${activeCat===c.id?'active':''}" onclick="setCat('${c.id}')"><span class="cnm">${esc(c.name)}</span>${c.count?`<span class="cnt">${c.count} ${t('ta')}</span>`:''}</div>`).join('');
+  box.innerHTML=cats.map(c=>`<div class="cattile ${activeCat===c.id?'active':''}" onclick="setCat('${c.id}')"><span class="cnm">${esc(c.name)}</span>${c.count?`<span class="cnt">${c.count} ${t('ta')}</span>`:''}</div>`).join('');
 }
 function setCat(id){ activeCat=id; renderCats(); renderGrid(); }
 
@@ -927,7 +928,7 @@ el('q').addEventListener('input', e=>{
   query=e.target.value.trim();
   const sr=!!query;
   el('shelves').style.display=sr?'none':'';
-  el('cats').style.display=sr?'none':'';
+  const _cs=el('cats'); if(_cs) _cs.style.display=sr?'none':'';
   const _ct = el('catTitle'); if(_ct) _ct.style.display=sr?'none':'';
   el('gridTitle').textContent=sr?t('natija'):t('barcha');
   renderGrid();
