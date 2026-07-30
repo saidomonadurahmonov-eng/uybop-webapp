@@ -48,6 +48,41 @@ input.f:focus{border-color:var(--accent)}
 .tgl::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s}
 .tgl.on::after{left:23px}
 .prev{width:100%;max-height:200px;object-fit:contain;border-radius:12px;background:var(--card2);margin-top:8px}
+/* Filtr chiplari */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:0 14px 10px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;padding:8px 14px;border-radius:20px;border:1px solid var(--line);
+  background:var(--card);color:var(--hint);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
+.catsel{margin:0 14px 10px;width:calc(100% - 28px)}
+/* Mahsulot to'ri (mijoz ilovasidek) */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 14px 18px}
+.pt{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;
+  display:flex;flex-direction:column;transition:transform .12s,border-color .12s}
+.pt:active{transform:scale(.97);border-color:var(--accent)}
+.pt .im{position:relative;width:100%;aspect-ratio:1;background:#fff;
+  display:flex;align-items:center;justify-content:center}
+.pt .im img{width:100%;height:100%;object-fit:contain}
+.pt .im .yoq{font-size:34px;opacity:.5}
+.pt .cnt{position:absolute;top:7px;left:7px;background:rgba(19,42,82,.92);color:#fff;
+  font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:8px}
+.pt .cnt.kop{background:var(--accent);color:var(--accent-text)}
+.pt .inf{padding:9px 10px 11px}
+.pt .nm2{font-size:12.5px;line-height:1.3;height:33px;overflow:hidden;color:var(--text)}
+.pt .pr{font-size:13.5px;font-weight:800;color:var(--accent);margin-top:5px}
+.pt .bj{display:inline-block;font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;margin-left:4px}
+/* Tahrirdagi galereya — katta, bir teginishda bosh rasm */
+.gbig{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:8px 0 4px}
+.gbig .gc{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:#fff;
+  border:2px solid transparent;cursor:pointer}
+.gbig .gc.bosh{border-color:var(--accent)}
+.gbig .gc img{width:100%;height:100%;object-fit:contain}
+.gbig .gc .lbl{position:absolute;left:0;right:0;bottom:0;text-align:center;font-size:9.5px;
+  font-weight:800;padding:3px 0;background:rgba(0,0,0,.55);color:#fff}
+.gbig .gc.bosh .lbl{background:var(--accent);color:var(--accent-text)}
+.gbig .gc .del{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;
+  border:none;background:rgba(91,37,48,.92);color:#ff9d9d;font-size:12px;line-height:1;cursor:pointer}
+.gbig .vc{display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--card2)}
 .gprev{display:flex;gap:12px;flex-wrap:wrap;margin:6px 0 8px;padding:8px 8px 12px}
 .gprev .gi{position:relative}
 .gprev .st{position:absolute;bottom:-8px;left:-8px;width:24px;height:24px;border-radius:50%;border:none;background:#3a3016;color:#ffd85e;font-size:12px;cursor:pointer;line-height:1}
@@ -78,6 +113,13 @@ h3{font-size:15px;margin-bottom:10px}
 
 <div class="view" id="v-katalog">
   <div class="search"><input id="q" type="search" placeholder="Mahsulot nomi yoki shtrix..."></div>
+  <div class="chips" id="fchips">
+    <div class="chip on" data-f="" onclick="setF('')">Hammasi</div>
+    <div class="chip" data-f="kop" onclick="setF('kop')">🖼 Ko'p rasmli</div>
+    <div class="chip" data-f="rasmli" onclick="setF('rasmli')">✅ Rasmli</div>
+    <div class="chip" data-f="rasmsiz" onclick="setF('rasmsiz')">📦 Rasmsiz</div>
+  </div>
+  <select class="f catsel" id="fcat" onchange="setKat(this.value)"></select>
   <div id="klist"><div class="empty">Qidiruv uchun yozing yoki kuting...</div></div>
 </div>
 
@@ -171,6 +213,7 @@ async function api(path, opts){
 }
 
 let ROLES = [], CUR = null, ROWS = [];
+let IMGV = Date.now();   // rasm keshini yangilash uchun
 
 const TABS = [
   {id:'katalog', i:'🗂', t:'Katalog', rol:'katalog'},
@@ -218,6 +261,9 @@ let CATS = [];
 async function yukleKategoriyalar(){
   try{ const d = await api('/api/admin/categories'); CATS = d.categories || []; }
   catch(e){ CATS = []; }
+  const fc = el('fcat');
+  if(fc) fc.innerHTML = '<option value="">🗂 Barcha kategoriyalar</option>' +
+    CATS.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
 }
 function catSelectToldir(joriy){
   const sel = el('e-cat'); if(!sel) return;
@@ -233,19 +279,45 @@ function catSelectToldir(joriy){
 let _qt = null;
 el('q') && el('q').addEventListener('input', e=>{ clearTimeout(_qt); _qt=setTimeout(()=>qidir(e.target.value.trim()), 350); });
 
+let FILTR = '', FKAT = '', SOROV = '';
+function setF(f){
+  FILTR = f;
+  document.querySelectorAll('#fchips .chip').forEach(c=>c.classList.toggle('on', c.dataset.f === f));
+  qidir(SOROV);
+}
+function setKat(k){ FKAT = k; qidir(SOROV); }
+
+function rasmUrl(u){
+  if(!u) return '';
+  const full = u.startsWith('/') ? API+u : u;
+  return full + (full.includes('?') ? '&' : '?') + 'w=400&v=' + IMGV;
+}
+
 async function qidir(q){
+  SOROV = q || '';
   try{
-    const d = await api('/api/admin/products?q='+encodeURIComponent(q));
+    const s = '/api/admin/products?q=' + encodeURIComponent(SOROV) +
+              '&f=' + encodeURIComponent(FILTR) + '&cat=' + encodeURIComponent(FKAT);
+    const d = await api(s);
     ROWS = d.products || [];
     if(!ROWS.length){ el('klist').innerHTML = '<div class="empty">Topilmadi 😕</div>'; return; }
-    el('klist').innerHTML = ROWS.map((p,i)=>`
-      <div class="rowi" onclick="ochE(${i})">
-        ${p.photo?`<img src="${p.photo.startsWith('/')?API+p.photo:p.photo}" onerror="this.outerHTML='<div class=ph>📦</div>'">`:'<div class="ph">📦</div>'}
-        <div class="nm">
-          <div class="n">${esc(p.name)}${p.archived?'<span class="b arx">ARXIV</span>':''}${p.edited?'<span class="b ed">✎</span>':''}${p.manual?'<span class="b man">qo\'lda</span>':''}</div>
-          <div class="p">${fmt(p.price)}</div>
-        </div>
-      </div>`).join('') + `<div class="empty" style="padding:12px">${d.total} tadan ${ROWS.length} tasi ko'rsatildi</div>`;
+    el('klist').innerHTML =
+      `<div class="pgrid">` + ROWS.map((p,i)=>{
+        const soni = (p.photo ? 1 : 0) + (p.gallery||[]).length;
+        const rozet = soni > 1 ? `<span class="cnt kop">🖼 ${soni}</span>`
+                    : (soni === 1 ? `<span class="cnt">🖼 1</span>` : '');
+        const rasm = p.photo
+          ? `<img src="${rasmUrl(p.photo)}" loading="lazy" onerror="this.outerHTML='<div class=yoq>📦</div>'">`
+          : `<div class="yoq">📦</div>`;
+        return `<div class="pt" onclick="ochE(${i})">
+          <div class="im">${rasm}${rozet}</div>
+          <div class="inf">
+            <div class="nm2">${esc(p.name)}</div>
+            <div class="pr">${fmt(p.price)}${p.archived?'<span class="bj b arx">ARXIV</span>':''}${p.manual?'<span class="bj b man">qo\'lda</span>':''}</div>
+          </div>
+        </div>`;
+      }).join('') + `</div>` +
+      `<div class="empty" style="padding:4px 0 12px">${d.total} tadan ${ROWS.length} tasi</div>`;
   }catch(e){ el('klist').innerHTML = '<div class="empty">Yuklab bo\'lmadi — qayta uring</div>'; }
 }
 
@@ -265,31 +337,44 @@ function ochE(i){
   ochT('tahrir');
 }
 
-let IMGV = Date.now();   // rasm keshini yangilash uchun
 function eGalRender(){
   const abs = u => {
     if(!u) return u;
     const full = u.startsWith('/') ? API+u : u;
-    return full + (full.includes('?') ? '&' : '?') + 'v=' + IMGV;
+    return full + (full.includes('?') ? '&' : '?') + 'w=400&v=' + IMGV;
   };
   let h = '';
+  // Bosh rasm — birinchi katak, pushti ramka bilan
   if(CUR.photo){
-    const x = CUR.photo.startsWith('/') ? `<button class="x" onclick="mediaDel('${CUR.id}')">✕</button>` : '';
-    h += `<div class="gi"><img src="${abs(CUR.photo)}"><span class="bosh">BOSH</span>${x}</div>`;
+    const x = CUR.photo.startsWith('/')
+      ? `<button class="del" onclick="event.stopPropagation();mediaDel('${CUR.id}')">✕</button>` : '';
+    h += `<div class="gc bosh"><img src="${abs(CUR.photo)}"><span class="lbl">BOSH RASM</span>${x}</div>`;
   }
+  // Qolganlari — BOSISH bilan bosh rasmga aylanadi (⭐ tugmasini qidirish shart emas)
   (CUR.gallery||[]).forEach(u=>{
     const gid = u.split('/').pop();
     const m = gid.match(/_g([2-5])$/);
-    const st = m ? `<button class="st" title="Bosh rasm qilish" onclick="boshRasm(${m[1]})">⭐</button>` : '';
-    h += `<div class="gi"><img src="${abs(u)}">${st}<button class="x" onclick="mediaDel('${gid}')">✕</button></div>`;
+    const bos = m ? ` onclick="boshRasm(${m[1]})"` : '';
+    const lbl = m ? 'Bosh qilish' : '';
+    h += `<div class="gc"${bos}><img src="${abs(u)}">
+            ${lbl ? `<span class="lbl">${lbl}</span>` : ''}
+            <button class="del" onclick="event.stopPropagation();mediaDel('${gid}')">✕</button>
+          </div>`;
   });
-  el('e-gal').innerHTML = h || '<div style="font-size:12px;color:var(--hint)">Hozircha rasm yo\'q</div>';
+  el('e-gal').innerHTML = h
+    ? `<div class="gbig">${h}</div>
+       <div style="font-size:11.5px;color:var(--hint);margin-top:4px">
+         👆 Rasmga bosing — u bosh rasm bo'ladi (mijoz katalogda shuni ko'radi)
+       </div>`
+    : '<div style="font-size:12px;color:var(--hint)">Hozircha rasm yo\'q</div>';
   el('e-vidrow').innerHTML = CUR.video
-    ? `<div class="gi"><div class="vb">🎬</div><button class="x" onclick="mediaDel('${CUR.id}_vid')">✕</button></div>`
+    ? `<div class="gbig"><div class="gc vc">🎬<button class="del" onclick="mediaDel('${CUR.id}_vid')">✕</button></div></div>`
     : '<div style="font-size:12px;color:var(--hint)">Video yo\'q</div>';
 }
+let _boshBand = false;
 async function boshRasm(slot){
-  if(!CUR) return;
+  if(!CUR || _boshBand) return;
+  _boshBand = true;
   try{
     const r = await api('/api/admin/main_photo', {method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -297,8 +382,16 @@ async function boshRasm(slot){
     if(!r.ok) throw 0;
     IMGV = Date.now();          // kesh yangilansin — yangi rasm darhol ko'rinsin
     eGalRender();
-    toast('⭐ Bosh rasm o\'zgartirildi');
+    // Ro'yxatdagi kartochka ham yangilansin (orqaga qaytganda to'g'ri ko'rinsin)
+    const i = ROWS.indexOf(CUR);
+    if(i >= 0){
+      const kar = document.querySelectorAll('#klist .pt')[i];
+      const im = kar && kar.querySelector('img');
+      if(im) im.src = rasmUrl(CUR.photo);
+    }
+    toast('✅ Bosh rasm o\'zgartirildi');
   }catch(e){ toast('⚠️ Bosh rasm o\'zgartirilmadi'); }
+  finally{ _boshBand = false; }
 }
 
 async function mediaDel(mid){
