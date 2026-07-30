@@ -276,7 +276,7 @@ const loaded = {history:false, balance:false, profile:false};
 let LANG = localStorage.getItem('uybop_lang') || 'uz';
 const T = {
   uz: {
-    kanal:"📢 Telegram kanalimiz — yangiliklar va aksiyalar",
+    top_h:"🔥 Tanlanganlar", kanal:"📢 Telegram kanalimiz — yangiliklar va aksiyalar",
     nav_cats:"Kategoriya", kat_h:"🗂 Kategoriyalar",
     kat_yoq:"Hozircha kategoriyalar yo'q 🗂", tarix_link:"Xaridlar tarixi",
     som:"so'm", qidiruv:"Mahsulot yoki artikul...", yangi:"🆕 Yangi kelganlar",
@@ -300,7 +300,7 @@ const T = {
     reg_btn:"📱 Ro'yxatdan o'tish",
   },
   ru: {
-    kanal:"📢 Наш Telegram-канал — новинки и акции",
+    top_h:"🔥 Избранное", kanal:"📢 Наш Telegram-канал — новинки и акции",
     nav_cats:"Категории", kat_h:"🗂 Категории",
     kat_yoq:"Пока категорий нет 🗂", tarix_link:"История покупок",
     som:"сум", qidiruv:"Товар или артикул...", yangi:"🆕 Новинки",
@@ -363,8 +363,10 @@ async function load(){
     if(DATA.authed){ await loadAuthedCatalog(); return; }
     await loadHidden();
     await loadOverrides();
+    await loadFeatured();
     applyHidden();
     applyOverrides();
+    applyFeatured();
     kategoriyalarniQur();
     renderShop();
     loadManual();
@@ -435,6 +437,24 @@ function applyOverrides(){
   });
   (DATA.shelves||[]).forEach(sh=>(sh.items||[]).forEach(ap));
 }
+let TOPIDS = [];
+async function loadFeatured(){
+  if(!DATA.api_url) return;
+  try{
+    const r = await fetch(DATA.api_url + '/api/featured');
+    TOPIDS = (await r.json()).ids || [];
+  }catch(e){ TOPIDS = []; }
+}
+function applyFeatured(){
+  // Xodim "Topga chiqarish" bilan belgilagan mahsulotlar — eng yuqori javon
+  if(!TOPIDS.length) return;
+  const bor = new Map();
+  (DATA.products||[]).forEach(p=>{ if(TOPIDS.includes(String(p.id))) bor.set(String(p.id), p); });
+  const items = TOPIDS.map(id=>bor.get(String(id))).filter(Boolean);
+  if(!items.length) return;
+  DATA.shelves = [{key:'top', title:t('top_h'), badge:'TOP', items}]
+    .concat((DATA.shelves||[]).filter(sh=>sh.key!=='top'));
+}
 async function loadHidden(){
   if(!DATA.api_url) return;
   try{
@@ -494,7 +514,7 @@ function renderShelves(){
   const shelves = DATA.shelves || [];
   if(!shelves.length){ el('shelves').innerHTML=''; return; }
   el('shelves').innerHTML = shelves.map(sh=>`
-    <div class="section-title">${esc(sh.key==='new'?t('yangi'):sh.title)}</div>
+    <div class="section-title">${esc(sh.key==='new'?t('yangi'):(sh.key==='top'?t('top_h'):sh.title))}</div>
     <div class="news">
       ${sh.items.map(p=>`
         <div class="news-card" onclick="openProduct('${p.id}')">
