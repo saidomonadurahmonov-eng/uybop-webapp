@@ -592,7 +592,7 @@ function renderCatsPage(){
   const jami = (DATA.products||[]).length;
   const kartochka = (id, ikon, nom, soni, bosh, foto) => `
     <div class="ctile${bosh ? ' all' : ''}" onclick="catOch('${esc(id).replace(/'/g,"\\'")}')">
-      <div class="cico">${ikon}${foto?`<img src="${kichik(foto,200)}" loading="lazy" onerror="this.remove()">`:''}</div>
+      <div class="cico">${ikon}${foto?`<img src="${foto}" loading="lazy" onerror="this.remove()">`:''}</div>
       <div class="cinf">
         <div class="cnm2">${esc(nom)}</div>
         <div class="cct">${soni} ${t('ta')}</div>
@@ -601,7 +601,9 @@ function renderCatsPage(){
   body.innerHTML =
     `<div class="cgrid">` +
     kartochka('', '\ud83d\uded2', t('hammasi'), jami, true) +
-    cats.map(c => kartochka(c.id, katIkon(c.name), c.name, c.count, false, c.foto)).join('') +
+    cats.map(c => kartochka(c.id, katIkon(c.name), c.name, c.count, false,
+      DATA.api_url ? DATA.api_url + '/api/kat-banner?nom=' + encodeURIComponent(c.id)
+                   : (c.foto ? kichik(c.foto, 200) : ''))).join('') +
     `</div>`;
 }
 function catOch(id){
