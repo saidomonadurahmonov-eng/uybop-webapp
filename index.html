@@ -68,9 +68,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ctile:active{transform:scale(.97);border-color:var(--accent)}
 .ctile.all{grid-column:1 / -1;flex-direction:row;align-items:center;gap:14px;
   background:linear-gradient(135deg,#132A52 0%,#1d3a6b 100%);border-color:rgba(247,148,29,.35)}
-.ctile .cico{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;
-  justify-content:center;font-size:27px;background:rgba(239,93,168,.13);flex:0 0 auto}
-.ctile.all .cico{background:rgba(247,148,29,.18)}
+.ctile .cico{position:relative;width:100%;aspect-ratio:16/10;border-radius:14px;display:flex;
+  align-items:center;justify-content:center;font-size:34px;background:rgba(239,93,168,.13);
+  flex:0 0 auto;overflow:hidden}
+.ctile .cico img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#fff}
+.ctile.all .cico{width:52px;height:52px;aspect-ratio:auto;border-radius:16px;font-size:27px;
+  background:rgba(247,148,29,.18)}
 .ctile .cinf{min-width:0;flex:1}
 .ctile .cnm2{font-size:14px;font-weight:700;color:var(--text);line-height:1.25;
   overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
@@ -497,14 +500,20 @@ function gateMsg(html){
 /* ---------- DO'KON ---------- */
 function kategoriyalarniQur(){
   // Mahsulotlardagi `cat` qiymatlaridan kategoriya ro'yxatini quramiz (soni bilan).
-  const sanoq = {};
+  // Har kategoriyaga O'SHA kategoriyadagi haqiqiy mahsulot rasmi tanlanadi
+  // (marketplace kartasi borlar afzal) — kartochkada emoji o'rniga rasm chiqadi.
+  const sanoq = {}, foto = {};
   (DATA.products||[]).forEach(p=>{
     const c = (p.cat||'').trim();
-    if(c && c !== '__other__') sanoq[c] = (sanoq[c]||0) + 1;
+    if(!c || c === '__other__') return;
+    sanoq[c] = (sanoq[c]||0) + 1;
+    const f = fotoOf(p);
+    if(f && (!foto[c] || (p.info_uz && !foto[c].karta)))
+      foto[c] = {u: f, karta: !!p.info_uz};
   });
   DATA.categories = Object.keys(sanoq)
     .sort((a,b)=> sanoq[b]-sanoq[a] || a.localeCompare(b))
-    .map(c=>({id:c, name:c, count:sanoq[c]}));
+    .map(c=>({id:c, name:c, count:sanoq[c], foto:(foto[c]||{}).u||''}));
   // Faol kategoriya endi mavjud bo'lmasa — tozalaymiz
   if(activeCat && !sanoq[activeCat]) activeCat='';
 }
@@ -581,9 +590,9 @@ function renderCatsPage(){
     return;
   }
   const jami = (DATA.products||[]).length;
-  const kartochka = (id, ikon, nom, soni, bosh) => `
+  const kartochka = (id, ikon, nom, soni, bosh, foto) => `
     <div class="ctile${bosh ? ' all' : ''}" onclick="catOch('${esc(id).replace(/'/g,"\\'")}')">
-      <div class="cico">${ikon}</div>
+      <div class="cico">${ikon}${foto?`<img src="${kichik(foto,200)}" loading="lazy" onerror="this.remove()">`:''}</div>
       <div class="cinf">
         <div class="cnm2">${esc(nom)}</div>
         <div class="cct">${soni} ${t('ta')}</div>
@@ -592,7 +601,7 @@ function renderCatsPage(){
   body.innerHTML =
     `<div class="cgrid">` +
     kartochka('', '\ud83d\uded2', t('hammasi'), jami, true) +
-    cats.map(c => kartochka(c.id, katIkon(c.name), c.name, c.count, false)).join('') +
+    cats.map(c => kartochka(c.id, katIkon(c.name), c.name, c.count, false, c.foto)).join('') +
     `</div>`;
 }
 function catOch(id){
