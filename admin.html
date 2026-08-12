@@ -295,33 +295,47 @@ function rasmUrl(u){
   return full + (full.includes('?') ? '&' : '?') + 'w=400&v=' + IMGV;
 }
 
+let TOTAL = 0;
 async function qidir(q){
   SOROV = q || '';
+  ROWS = [];
+  await yanaYukla(true);
+}
+async function yanaYukla(birinchi){
   try{
     const s = '/api/admin/products?q=' + encodeURIComponent(SOROV) +
-              '&f=' + encodeURIComponent(FILTR) + '&cat=' + encodeURIComponent(FKAT);
+              '&f=' + encodeURIComponent(FILTR) + '&cat=' + encodeURIComponent(FKAT) +
+              '&off=' + ROWS.length;
     const d = await api(s);
-    ROWS = d.products || [];
+    TOTAL = d.total || 0;
+    ROWS = ROWS.concat(d.products || []);
     if(!ROWS.length){ el('klist').innerHTML = '<div class="empty">Topilmadi 😕</div>'; return; }
-    el('klist').innerHTML =
-      `<div class="pgrid">` + ROWS.map((p,i)=>{
-        const soni = (p.photo ? 1 : 0) + (p.gallery||[]).length;
-        const rozet = soni > 1 ? `<span class="cnt kop">🖼 ${soni}</span>`
-                    : (soni === 1 ? `<span class="cnt">🖼 1</span>` : '');
-        const rasm = p.photo
-          ? `<img src="${rasmUrl(p.photo)}" loading="lazy" onerror="this.outerHTML='<div class=yoq>📦</div>'">`
-          : `<div class="yoq">📦</div>`;
-        const topb = p.featured ? `<span class="cnt top">⬆️ TOP</span>` : '';
-        return `<div class="pt" onclick="ochE(${i})">
-          <div class="im">${rasm}${rozet}${topb}</div>
-          <div class="inf">
-            <div class="nm2">${esc(p.name)}</div>
-            <div class="pr">${fmt(p.price)}${p.archived?'<span class="bj b arx">ARXIV</span>':''}${p.manual?'<span class="bj b man">qo\'lda</span>':''}</div>
-          </div>
-        </div>`;
-      }).join('') + `</div>` +
-      `<div class="empty" style="padding:4px 0 12px">${d.total} tadan ${ROWS.length} tasi</div>`;
-  }catch(e){ el('klist').innerHTML = '<div class="empty">Yuklab bo\'lmadi — qayta uring</div>'; }
+    katRender();
+  }catch(e){ if(birinchi) el('klist').innerHTML = '<div class="empty">Yuklab bo\'lmadi — qayta uring</div>'; }
+}
+function katRender(){
+  el('klist').innerHTML =
+    `<div class="pgrid">` + ROWS.map((p,i)=>{
+      const soni = (p.photo ? 1 : 0) + (p.gallery||[]).length;
+      const rozet = soni > 1 ? `<span class="cnt kop">🖼 ${soni}</span>`
+                  : (soni === 1 ? `<span class="cnt">🖼 1</span>` : '');
+      const rasm = p.photo
+        ? `<img src="${rasmUrl(p.photo)}" loading="lazy" onerror="this.outerHTML='<div class=yoq>📦</div>'">`
+        : `<div class="yoq">📦</div>`;
+      const topb = p.featured ? `<span class="cnt top">⬆️ TOP</span>` : '';
+      return `<div class="pt" onclick="ochE(${i})">
+        <div class="im">${rasm}${rozet}${topb}</div>
+        <div class="inf">
+          <div class="nm2">${esc(p.name)}</div>
+          <div class="pr">${fmt(p.price)}${p.archived?'<span class="bj b arx">ARXIV</span>':''}${p.manual?'<span class="bj b man">qo\'lda</span>':''}</div>
+        </div>
+      </div>`;
+    }).join('') + `</div>` +
+    `<div class="empty" style="padding:4px 0 12px">${TOTAL} tadan ${ROWS.length} tasi` +
+    (ROWS.length < TOTAL
+      ? ` &nbsp;<button class="chip on" style="cursor:pointer;border:0" onclick="yanaYukla()">⬇️ Yana ko'rsatish</button>`
+      : '') +
+    `</div>`;
 }
 
 function ochE(i){
