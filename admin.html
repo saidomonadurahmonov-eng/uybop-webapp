@@ -225,15 +225,17 @@ const TABS = [
   {id:'stat', i:'📊', t:'Statistika', rol:'osish'},
 ];
 
-let CURV = '';
+let CURV = '', KAT_SCROLL = 0;
 function ochT(id){
+  if(CURV === 'katalog' && id !== 'katalog') KAT_SCROLL = window.scrollY;
   CURV = id;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   el('v-'+id).classList.add('on');
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.t===id));
   if(id==='buyurtma') yukleOrders();
   if(id==='stat') yukleStat();
-  window.scrollTo(0,0);
+  // Katalogga qaytishda oldingi joyga qaytamiz (boshiga sakramaydi)
+  window.scrollTo(0, id === 'katalog' ? KAT_SCROLL : 0);
   bbSync();
 }
 function bbSync(){
@@ -312,6 +314,26 @@ async function yanaYukla(birinchi){
     if(!ROWS.length){ el('klist').innerHTML = '<div class="empty">Topilmadi 😕</div>'; return; }
     katRender();
   }catch(e){ if(birinchi) el('klist').innerHTML = '<div class="empty">Yuklab bo\'lmadi — qayta uring</div>'; }
+}
+async function joyidaYangila(){
+  // Saqlash/o'chirishdan keyin: ro'yxatni QAYTA yuklaydi, lekin sahifalash
+  // chuqurligi va scroll joyi saqlanadi (boshiga qaytarib yubormaydi)
+  const kerak = Math.max(ROWS.length, 80);
+  let yangi = [];
+  try{
+    while(true){
+      const d = await api('/api/admin/products?q=' + encodeURIComponent(SOROV) +
+                '&f=' + encodeURIComponent(FILTR) + '&cat=' + encodeURIComponent(FKAT) +
+                '&off=' + yangi.length);
+      TOTAL = d.total || 0;
+      const p = d.products || [];
+      yangi = yangi.concat(p);
+      if(!p.length || yangi.length >= Math.min(kerak, TOTAL)) break;
+    }
+    ROWS = yangi;
+    katRender();
+    window.scrollTo(0, KAT_SCROLL);
+  }catch(e){}
 }
 function katRender(){
   el('klist').innerHTML =
@@ -478,7 +500,8 @@ async function saqla(){
       if(!pr2.ok) throw 0;
     }
     toast('💾 Saqlandi!');
-    ochT('katalog'); qidir(el('q').value.trim());
+    if(files.length || vf) IMGV = Date.now();
+    ochT('katalog'); joyidaYangila();
   }catch(e){ toast('⚠️ Saqlashda xatolik'); }
   btn.disabled = false; btn.textContent = '💾 Saqlash';
 }
@@ -489,7 +512,8 @@ async function aslga(){
   try{
     await api('/api/admin/reset', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: CUR.id})});
     toast('↩️ Asl holiga qaytdi');
-    ochT('katalog'); qidir(el('q').value.trim());
+    IMGV = Date.now();
+    ochT('katalog'); joyidaYangila();
   }catch(e){ toast('⚠️ Xatolik'); }
 }
 
@@ -529,7 +553,7 @@ async function manOchir(){
   try{
     await api('/api/admin/manual', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({del: CUR.manual})});
     toast('🗑 O\'chirildi');
-    ochT('katalog'); qidir(el('q').value.trim());
+    ochT('katalog'); joyidaYangila();
   }catch(e){ toast('⚠️ Xatolik'); }
 }
 
