@@ -229,6 +229,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div class="toast" id="toast"></div>
 
 <script>
+/* Katalogning ASOSIY manbasi — bot serveri (jonli). GitHub Pages'dagi
+   data/products.json endi faqat ZAXIRA. Bu manzil ochiq ma'lumot, sir emas. */
+const API_ZAXIRA = 'https://uybop-production.up.railway.app';
 const tg = window.Telegram ? Telegram.WebApp : null;
 if (tg) { tg.ready(); tg.expand(); }
 const INIT = tg ? (tg.initData || '') : '';
@@ -358,10 +361,27 @@ async function apiGet(path){
 }
 const PHONE_NOTE = LOGIN_HTML;
 
+/* Katalog manbasi: 1) bot serveri (jonli), 2) GitHub Pages'dagi products.json
+   (zaxira). Server yiqilsa/kechiksa — eski xatti-harakat aynan saqlanadi. */
+async function katalogServerdan(){
+  const ctl = new AbortController();
+  const vaqt = setTimeout(()=>ctl.abort(), 8000);
+  try{
+    const r = await fetch(API_ZAXIRA + '/api/katalog?t=' + Date.now(),
+                          {signal: ctl.signal, cache: 'no-store'});
+    if(!r.ok) return null;
+    const d = await r.json();
+    return (d && Array.isArray(d.products) && d.products.length) ? d : null;
+  }catch(e){ return null; }
+  finally{ clearTimeout(vaqt); }
+}
 async function load(){
   try{
-    const r = await fetch('data/products.json?v=' + Date.now());
-    DATA = await r.json();
+    DATA = await katalogServerdan();
+    if(!DATA){                                  // zaxira: GitHub Pages
+      const r = await fetch('data/products.json?v=' + Date.now());
+      DATA = await r.json();
+    }
     el('updated').textContent = 'Yangilangan: ' + (DATA.generated_at || '');
     if(DATA.authed){ await loadAuthedCatalog(); return; }
     await loadHidden();
