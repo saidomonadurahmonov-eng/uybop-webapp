@@ -216,12 +216,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div id="catsBody"></div>
 </div>
 
+<!-- TOP — xodim "Topga chiqarish" bilan belgilagan mahsulotlar (cheklovsiz) -->
+<div class="view" id="v-top">
+  <div class="header"><h1 id="topH1">🔥 Tanlanganlar</h1></div>
+  <div id="topBody"></div>
+</div>
+
 <!-- pastki menyu -->
 <div class="nav" id="nav">
   <button data-v="shop" class="active"><span class="ic">🛍</span>Do'kon</button>
-  <button data-v="cats"><span class="ic">🗂</span>Kategoriya</button>
+  <button data-v="top"><span class="ic">🔥</span>TOP</button>
   <button data-v="cart"><span class="ic">🛒</span>Savat<span class="badge" id="navBadge" style="display:none">0</span></button>
-  <button data-v="balance"><span class="ic">💰</span>Balans</button>
+  <button data-v="cats"><span class="ic">🗂</span>Kategoriya</button>
   <button data-v="profile"><span class="ic">👤</span>Kabinet</button>
 </div>
 
@@ -290,7 +296,8 @@ const T = {
     natija:"Qidiruv natijasi", topilmadi:"Hech narsa topilmadi 😕", dan:"dan",
     xil:"xil", ta:"ta", savat_h:"🛒 Savat", tarix_h:"🧾 Xaridlar tarixi",
     balans_h:"💰 Balans", kabinet_h:"👤 Mijoz kabineti",
-    nav_shop:"Do'kon", nav_cart:"Savat", nav_hist:"Tarix", nav_bal:"Balans", nav_prof:"Kabinet",
+    nav_shop:"Do'kon", nav_top:"TOP", nav_cart:"Savat", nav_hist:"Tarix", nav_bal:"Balans",
+    nav_prof:"Kabinet", top_yoq:"Hozircha tanlangan mahsulot yo'q 🔥",
     savatga:"🛒 Savatga qo'shish", mavjud:"✅ Sotuvda mavjud", artikul:"Artikul",
     qoshildi:"✅ Savatga qo'shildi",
     bosh:"Savat bo'sh.<br>Do'kondan mahsulot tanlang.", jami:"Jami:",
@@ -314,7 +321,8 @@ const T = {
     natija:"Результаты поиска", topilmadi:"Ничего не найдено 😕", dan:"и выше",
     xil:"вида", ta:"шт", savat_h:"🛒 Корзина", tarix_h:"🧾 История покупок",
     balans_h:"💰 Баланс", kabinet_h:"👤 Кабинет",
-    nav_shop:"Магазин", nav_cart:"Корзина", nav_hist:"История", nav_bal:"Баланс", nav_prof:"Кабинет",
+    nav_shop:"Магазин", nav_top:"ТОП", nav_cart:"Корзина", nav_hist:"История", nav_bal:"Баланс",
+    nav_prof:"Кабинет", top_yoq:"Пока нет избранных товаров 🔥",
     savatga:"🛒 В корзину", mavjud:"✅ В наличии", artikul:"Артикул",
     qoshildi:"✅ Добавлено в корзину",
     bosh:"Корзина пуста.<br>Выберите товары в магазине.", jami:"Итого:",
@@ -507,8 +515,10 @@ async function loadManual(){
     if(d.products && d.products.length){
       DATA.products = (DATA.products||[]).concat(d.products.filter(p=>!HIDDEN.has(p.id)));
       applyOverrides();
+      applyFeatured();          // qo'lda qo'shilgan mahsulot ham TOP'da ko'rinsin
       kategoriyalarniQur();
-      renderCats(); renderGrid();
+      renderCats(); renderGrid(); renderShelves();
+      if(curView==='top') renderTopPage();
     }
   }catch(e){}
 }
@@ -646,10 +656,9 @@ function filtered(){
   if(activeCat) list = list.filter(p=>p.cat===activeCat);
   return rasmliOldin(list);
 }
-function renderGrid(){
-  const list = filtered();
-  el('empty').style.display = list.length ? 'none':'block';
-  el('grid').innerHTML = list.slice(0,300).map(p=>`
+/* Mahsulot kartochkasi — do'kon to'ri va TOP bo'limi bir xil ko'rinishda */
+function pcardHTML(p){
+  return `
     <div class="pcard">
       <div class="pimg" onclick="openProduct('${p.id}')">
         ${p.disc?`<span class="discbadge">-${p.disc}%</span>`:(p.variants?`<span class="discbadge" style="background:#8b5cf6">${p.variants.length} ${t('xil')}</span>`:'')}
@@ -660,7 +669,24 @@ function renderGrid(){
         <div class="pname">${esc(p.name)}</div>
         <div class="pprice">${p.old_price?`<span class="oldp">${fmt(p.old_price)}</span>`:''}${fmt(p.price)}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+}
+function renderGrid(){
+  const list = filtered();
+  el('empty').style.display = list.length ? 'none':'block';
+  el('grid').innerHTML = list.slice(0,300).map(pcardHTML).join('');
+}
+/* TOP bo'limi — xodim belgilagan BARCHA mahsulotlar (soni cheklanmagan) */
+function renderTopPage(){
+  const box = el('topBody'); if(!box) return;
+  const bor = new Map();
+  (DATA.products||[]).forEach(p=>{ if(TOPIDS.includes(String(p.id))) bor.set(String(p.id), p); });
+  const items = TOPIDS.map(id=>bor.get(String(id))).filter(Boolean);
+  if(!items.length){
+    box.innerHTML = `<div class="empty">${t('top_yoq')}</div>`;
+    return;
+  }
+  box.innerHTML = `<div class="grid">` + items.map(pcardHTML).join('') + `</div>`;
 }
 function getP(id){ return DATA.products.find(p=>p.id===id); }
 function quickAdd(id){ const p=getP(id); if(p&&p.variants){ openProduct(id); return; } addToCart(id,1); }
@@ -944,6 +970,11 @@ async function loadProfile(){
         <div class="row"><span class="k">Hudud</span><span class="v">${esc(loc)}</span></div>
       </div>
       <div class="catlist" style="padding:0 0 4px">
+        <div class="catrow" onclick="switchView('balance')">
+          <span class="cicon">💰</span>
+          <span class="cname">${t('nav_bal')}</span>
+          <span class="ccount">›</span>
+        </div>
         <div class="catrow" onclick="switchView('history')">
           <span class="cicon">🧾</span>
           <span class="cname">${t('tarix_link')}</span>
@@ -954,7 +985,9 @@ async function loadProfile(){
       ${OPTOM_PCT()>0?`<div class="panel"><div class="row"><span class="k">🏷 Optom</span><span class="v">${fmt(OPTOM_MIN())} dan ${OPTOM_PCT()}% chegirma</span></div></div>`:''}`;
   }catch(e){
     // Kirmagan bo'lsa ham Tarix havolasi ko'rinsin (bosilganda kirish so'raladi)
-    const tl = `<div class="catlist" style="padding:0 0 4px"><div class="catrow" onclick="switchView('history')"><span class="cicon">🧾</span><span class="cname">${t('tarix_link')}</span><span class="ccount">›</span></div></div>`;
+    const tl = `<div class="catlist" style="padding:0 0 4px">`
+      + `<div class="catrow" onclick="switchView('balance')"><span class="cicon">💰</span><span class="cname">${t('nav_bal')}</span><span class="ccount">›</span></div>`
+      + `<div class="catrow" onclick="switchView('history')"><span class="cicon">🧾</span><span class="cname">${t('tarix_link')}</span><span class="ccount">›</span></div></div>`;
     const xato = (e.message==='no-auth') ? PHONE_NOTE : '<div class="empty">Ma\'lumotni yuklab bo\'lmadi.</div>';
     el('profBody').innerHTML = tl + xato;
   }
@@ -965,10 +998,13 @@ function switchView(v){
   curView=v;
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
   el('v-'+v).classList.add('active');
-  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active', b.dataset.v===v));
+  // Balans va Tarix — Kabinet ichida, shuning uchun pastda Kabinet yonib turadi
+  const navV = (v==='balance' || v==='history') ? 'profile' : v;
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active', b.dataset.v===navV));
   window.scrollTo(0,0);
   if(v==='cart') renderCart();
   if(v==='cats') renderCatsPage();
+  if(v==='top') renderTopPage();
   if(v==='history'){ if(!loaded.history){loaded.history=true; loadHistory();} }
   if(v==='balance'){ if(!loaded.balance){loaded.balance=true; loadBalance();} }
   if(v==='profile'){ if(!loaded.profile){loaded.profile=true; loadProfile();} }
@@ -1001,9 +1037,10 @@ function applyLang(){
   const em = el('empty'); if(em && em.style.display==='none') em.innerHTML = t('topilmadi');
   const h = (sel, k) => { const e = document.querySelector(sel); if(e) e.textContent = t(k); };
   h('#v-cart h1','savat_h'); h('#v-history h1','tarix_h'); h('#catsH1','kat_h');
-  h('#v-balance h1','balans_h'); h('#v-profile h1','kabinet_h');
-  const ikon = {shop:'🛍', cats:'🗂', cart:'🛒', history:'🧾', balance:'💰', profile:'👤'};
-  const lab = {shop:t('nav_shop'), cats:t('nav_cats'), cart:t('nav_cart'), history:t('nav_hist'), balance:t('nav_bal'), profile:t('nav_prof')};
+  h('#v-balance h1','balans_h'); h('#v-profile h1','kabinet_h'); h('#topH1','top_h');
+  const ikon = {shop:'🛍', top:'🔥', cats:'🗂', cart:'🛒', history:'🧾', balance:'💰', profile:'👤'};
+  const lab = {shop:t('nav_shop'), top:t('nav_top'), cats:t('nav_cats'), cart:t('nav_cart'),
+               history:t('nav_hist'), balance:t('nav_bal'), profile:t('nav_prof')};
   document.querySelectorAll('#nav button').forEach(b=>{
     const v = b.dataset.v;
     const badge = v==='cart' ? '<span class="badge" id="navBadge" style="display:none">0</span>' : '';
