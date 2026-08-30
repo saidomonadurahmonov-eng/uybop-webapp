@@ -476,12 +476,26 @@ async function loadFeatured(){
     TOPIDS = (await r.json()).ids || [];
   }catch(e){ TOPIDS = []; }
 }
+/* TOP mahsulotlar ro'yxati. Xodim panelda VARIANTNI ham topga chiqara oladi —
+   ilovada variant alohida kartochka emas, shuning uchun uning OTA kartasini
+   ko'rsatamiz (aks holda belgilangan mahsulot jimgina ko'rinmay qolardi). */
+function topMahsulotlar(){
+  const bor = new Map();
+  (DATA.products||[]).forEach(p=>{
+    bor.set(String(p.id), p);
+    (p.variants||[]).forEach(v=>{ if(!bor.has(String(v.id))) bor.set(String(v.id), p); });
+  });
+  const korilgan = new Set(), items = [];
+  for(const id of TOPIDS){
+    const p = bor.get(String(id));
+    if(p && !korilgan.has(String(p.id))){ korilgan.add(String(p.id)); items.push(p); }
+  }
+  return items;
+}
 function applyFeatured(){
   // Xodim "Topga chiqarish" bilan belgilagan mahsulotlar — eng yuqori javon
   if(!TOPIDS.length) return;
-  const bor = new Map();
-  (DATA.products||[]).forEach(p=>{ if(TOPIDS.includes(String(p.id))) bor.set(String(p.id), p); });
-  const items = TOPIDS.map(id=>bor.get(String(id))).filter(Boolean);
+  const items = topMahsulotlar();
   if(!items.length) return;
   DATA.shelves = [{key:'top', title:t('top_h'), badge:'TOP', items}]
     .concat((DATA.shelves||[]).filter(sh=>sh.key!=='top'));
@@ -679,9 +693,7 @@ function renderGrid(){
 /* TOP bo'limi — xodim belgilagan BARCHA mahsulotlar (soni cheklanmagan) */
 function renderTopPage(){
   const box = el('topBody'); if(!box) return;
-  const bor = new Map();
-  (DATA.products||[]).forEach(p=>{ if(TOPIDS.includes(String(p.id))) bor.set(String(p.id), p); });
-  const items = TOPIDS.map(id=>bor.get(String(id))).filter(Boolean);
+  const items = topMahsulotlar();
   if(!items.length){
     box.innerHTML = `<div class="empty">${t('top_yoq')}</div>`;
     return;
