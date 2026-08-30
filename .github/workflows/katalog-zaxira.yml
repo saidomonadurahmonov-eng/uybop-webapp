@@ -1,0 +1,53 @@
+# Katalog ZAXIRA nusxasi.
+#
+# Mijoz ilovasi katalogni bot serveridan JONLI oladi; bu fayl faqat zaxira —
+# server javob bermay qolsa ilova shunga tushadi.
+#
+# Nega Actions: serverdagi shaxsiy GITHUB_TOKEN muddati tugab qolgan edi va
+# zaxira 10 kun eskirdi. Actions o'zining ichki kalitidan foydalanadi —
+# muddati tugamaydi, hech kim yangilab turishi shart emas.
+name: Katalog zaxirasi
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"      # har 6 soatda
+  workflow_dispatch:            # qo'lda ham ishga tushirish mumkin
+
+permissions:
+  contents: write
+
+concurrency:
+  group: katalog-zaxira
+  cancel-in-progress: true
+
+jobs:
+  zaxira:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Serverdan jonli katalogni olish
+        run: |
+          curl -sfS --max-time 120 --retry 3 --retry-delay 10 \
+            "https://uybop-production.up.railway.app/api/katalog" -o yangi.json
+          # Yaroqlilik tekshiruvi: buzuq yoki bo'sh fayl zaxirani buzmasin
+          python -c "
+          import json, sys
+          d = json.load(open('yangi.json', encoding='utf-8'))
+          n = len(d.get('products') or [])
+          print('kartalar:', n, '| generated_at:', d.get('generated_at'))
+          sys.exit(0 if n >= 100 else 1)
+          "
+          mv yangi.json data/products.json
+
+      - name: O'zgargan bo'lsa commit qilish
+        run: |
+          git config user.name "uybop-katalog"
+          git config user.email "katalog@uybop.local"
+          git add data/products.json
+          if git diff --staged --quiet; then
+            echo "o'zgarish yo'q"
+          else
+            git commit -m "katalog zaxirasi (avtomatik)"
+            git push
+          fi
