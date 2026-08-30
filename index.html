@@ -342,11 +342,16 @@ const t = k => (T[LANG] && T[LANG][k]) || T.uz[k] || k;
 const fmt = n => new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + ' ' + t('som');
 function fotoOf(p){
   if(!p) return '';
-  const o = LANG === 'ru' ? (p.photo_ru || p.photo || '') : (p.photo || p.photo_ru || '');
+  return LANG === 'ru' ? (p.photo_ru || p.photo || '') : (p.photo || p.photo_ru || '');
+}
+/* Faqat RO'YXAT ko'rinishlari uchun (to'r, javon, TOP, kategoriya rasmi):
+   variantli kartada rasm ba'zan faqat variantga ulangan bo'ladi — guruh
+   kartochkasi bo'sh (📦) turmasin. Mahsulot kartochkasi va SAVAT bunga
+   TAYANMAYDI: u yerda tanlangan variantning o'z rasmi ko'rsatilishi shart. */
+function kartaFoto(p){
+  const o = fotoOf(p);
   if(o) return o;
-  // Variantli kartada rasm faqat variantga ulangan bo'lishi mumkin (xodim
-  // guruhda variant shtrixi bilan yuborgan) — guruh kartasi rasmsiz turmasin.
-  for(const v of (p.variants || [])){
+  for(const v of (p && p.variants || [])){
     const f = LANG === 'ru' ? (v.photo_ru || v.photo || '') : (v.photo || v.photo_ru || '');
     if(f) return f;
   }
@@ -393,11 +398,15 @@ async function katalogServerdan(){
 }
 async function load(){
   try{
-    DATA = await katalogServerdan();
-    if(!DATA){                                  // zaxira: GitHub Pages
+    // DATA ni faqat HAQIQIY katalog kelganda almashtiramiz — aks holda
+    // boshlang'ich xavfsiz obyekt (bo'sh ro'yxatlar) joyida qoladi va
+    // ikkala manba ham yiqilsa ham ilova "null" ga urilmaydi.
+    let d = await katalogServerdan();
+    if(!d){                                     // zaxira: GitHub Pages
       const r = await fetch('data/products.json?v=' + Date.now());
-      DATA = await r.json();
+      d = await r.json();
     }
+    if(d && Array.isArray(d.products)) DATA = d;
     el('updated').textContent = 'Yangilangan: ' + (DATA.generated_at || '');
     if(DATA.authed){ await loadAuthedCatalog(); return; }
     await loadHidden();
@@ -559,7 +568,7 @@ function kategoriyalarniQur(){
     const c = (p.cat||'').trim();
     if(!c || c === '__other__') return;
     sanoq[c] = (sanoq[c]||0) + 1;
-    const f = fotoOf(p);
+    const f = kartaFoto(p);
     if(f && (!foto[c] || (p.info_uz && !foto[c].karta)))
       foto[c] = {u: f, karta: !!p.info_uz};
   });
@@ -580,7 +589,7 @@ function renderShelves(){
       ${sh.items.map(p=>`
         <div class="news-card" onclick="openProduct('${p.id}')">
           <span class="nbadge ${BADGE_CLASS[sh.key]||''}">${p.disc?('-'+p.disc+'%'):esc(sh.badge)}</span>
-          ${fotoOf(p)?`<img src="${kichik(fotoOf(p),400)}" loading="lazy" onerror="this.style.display='none'">`:`<div style="width:130px;height:130px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:34px">📦</div>`}
+          ${kartaFoto(p)?`<img src="${kichik(kartaFoto(p),400)}" loading="lazy" onerror="this.style.display='none'">`:`<div style="width:130px;height:130px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:34px">📦</div>`}
           <div class="nname">${esc(p.name)}</div>
           <div class="nprice">${p.old_price?`<span class="oldp">${fmt(p.old_price)}</span>`:''}${fmt(p.price)}${p.variants?' <span style="font-weight:400;font-size:11px;color:var(--hint)">'+t('dan')+'</span>':''}</div>
         </div>`).join('')}
@@ -669,7 +678,7 @@ function catOch(id){
 function rasmliOldin(list){
   // Rasmi bor mahsulotlar oldinda (tartibni buzmasdan — barqaror saralash)
   const bor = [], yoq = [];
-  for(const p of list){ (fotoOf(p) ? bor : yoq).push(p); }
+  for(const p of list){ (kartaFoto(p) ? bor : yoq).push(p); }
   return bor.concat(yoq);
 }
 function filtered(){
@@ -684,7 +693,7 @@ function pcardHTML(p){
     <div class="pcard">
       <div class="pimg" onclick="openProduct('${p.id}')">
         ${p.disc?`<span class="discbadge">-${p.disc}%</span>`:(p.variants?`<span class="discbadge" style="background:#8b5cf6">${p.variants.length} ${t('xil')}</span>`:'')}
-        ${fotoOf(p)?`<img src="${kichik(fotoOf(p),400)}" loading="lazy" onerror="this.outerHTML='<div class=noimg>📦</div>'">`:`<div class="noimg">📦</div>`}
+        ${kartaFoto(p)?`<img src="${kichik(kartaFoto(p),400)}" loading="lazy" onerror="this.outerHTML='<div class=noimg>📦</div>'">`:`<div class="noimg">📦</div>`}
         <button class="qadd" onclick="event.stopPropagation();quickAdd('${p.id}')">+</button>
       </div>
       <div class="pinfo" onclick="openProduct('${p.id}')">
@@ -800,6 +809,8 @@ if(tg && tg.BackButton){
   try{
     tg.BackButton.onClick(()=>{
       if(sheetOchiqmi()) closeSheet();
+      // Balans va Tarix — Kabinet ichida: orqaga bosilsa Kabinetga qaytadi
+      else if(curView==='balance' || curView==='history') switchView('profile');
       else if(curView!=='shop') switchView('shop');
     });
   }catch(e){}
@@ -1048,6 +1059,8 @@ function setLang(l){
   applyLang();
   renderShop();
   if(curView==='cart') renderCart();
+  if(curView==='top') renderTopPage();      // TOP yarim tarjima bo'lib qolmasin
+  if(curView==='cats') renderCatsPage();
 }
 function applyLang(){
   const q0 = el('q'); if(q0) q0.placeholder = t('qidiruv');
