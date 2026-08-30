@@ -342,7 +342,15 @@ const t = k => (T[LANG] && T[LANG][k]) || T.uz[k] || k;
 const fmt = n => new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + ' ' + t('som');
 function fotoOf(p){
   if(!p) return '';
-  return LANG === 'ru' ? (p.photo_ru || p.photo || '') : (p.photo || p.photo_ru || '');
+  const o = LANG === 'ru' ? (p.photo_ru || p.photo || '') : (p.photo || p.photo_ru || '');
+  if(o) return o;
+  // Variantli kartada rasm faqat variantga ulangan bo'lishi mumkin (xodim
+  // guruhda variant shtrixi bilan yuborgan) — guruh kartasi rasmsiz turmasin.
+  for(const v of (p.variants || [])){
+    const f = LANG === 'ru' ? (v.photo_ru || v.photo || '') : (v.photo || v.photo_ru || '');
+    if(f) return f;
+  }
+  return '';
 }
 /* Serverdagi rasmning YENGIL nusxasi (asl fayl 1-2 MB bo'lishi mumkin).
    Katalogda 400px, kartochkada 900px — sahifa tez ochilsin. */
