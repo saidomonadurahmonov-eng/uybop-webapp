@@ -388,8 +388,10 @@ async function katalogServerdan(){
   const ctl = new AbortController();
   const vaqt = setTimeout(()=>ctl.abort(), 8000);
   try{
-    const r = await fetch(API_ZAXIRA + '/api/katalog?t=' + Date.now(),
-                          {signal: ctl.signal, cache: 'no-store'});
+    // 'no-cache' = har safar serverdan tekshiradi (eskisi hech qachon ko'rinmaydi),
+    // lekin katalog o'zgarmagan bo'lsa server 304 qaytaradi — qayta yuklanmaydi.
+    const r = await fetch(API_ZAXIRA + '/api/katalog',
+                          {signal: ctl.signal, cache: 'no-cache'});
     if(!r.ok) return null;
     const d = await r.json();
     return (d && Array.isArray(d.products) && d.products.length) ? d : null;
